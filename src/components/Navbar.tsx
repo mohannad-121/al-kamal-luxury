@@ -11,7 +11,6 @@ const links = [
   { to: "/", ar: "الرئيسية", en: "Home" },
   { to: "/menu", ar: "المنيو", en: "Menu" },
   { to: "/menu", hash: "popular", ar: "الأكثر طلباً", en: "Popular" },
-  { to: "/", hash: "story", ar: "قصتنا", en: "Story" },
   { to: "/", hash: "location", ar: "موقعنا", en: "Find us" },
 ] as const;
 
@@ -44,13 +43,11 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          "fixed inset-x-0 top-0 z-[80] transition-all duration-700 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
-          scrolled
-            ? "border-b border-gold/15 bg-ink/85 backdrop-blur-xl"
-            : "bg-transparent",
+          "fixed inset-x-0 top-0 z-[80] border-b border-gold/15 bg-ink/90 backdrop-blur-xl transition-all duration-700 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] lg:border-b-0 lg:bg-transparent lg:backdrop-blur-none",
+          scrolled ? "border-b border-gold/15 bg-ink/85 backdrop-blur-xl" : "lg:bg-transparent",
         )}
       >
-        <div className="mx-auto flex h-[68px] max-w-[1400px] items-center justify-between gap-4 px-5 sm:h-[76px] sm:px-8">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 pt-[env(safe-area-inset-top)] sm:h-[76px] sm:px-8 sm:pt-0">
           <Link to="/" className="group flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center border border-gold/50 text-gold transition-colors duration-500 group-hover:bg-gold group-hover:text-ink">
               <span className="font-display text-sm">ك</span>
@@ -59,9 +56,7 @@ export function Navbar() {
               <span className="block font-display text-[0.95rem] text-bone">
                 {L(restaurant.nameAr, restaurant.nameEn)}
               </span>
-              <span className="block text-[0.6rem] tracking-[0.22em] text-gold/80">
-                AL KAMAL
-              </span>
+              <span className="block text-[0.6rem] tracking-[0.22em] text-gold/80">AL KAMAL</span>
             </span>
           </Link>
 
@@ -81,18 +76,18 @@ export function Navbar() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               to="/menu"
-              className="hidden h-10 w-10 place-items-center text-bone/70 transition-colors hover:text-gold sm:grid"
+              className="grid h-10 w-10 place-items-center text-bone/70 transition-colors hover:text-gold sm:grid"
               aria-label={L("بحث", "Search")}
             >
               <Search className="h-[18px] w-[18px]" />
             </Link>
             <button
               onClick={toggle}
-              className="hidden h-10 items-center gap-1.5 px-2 text-[0.72rem] tracking-widest text-bone/70 transition-colors hover:text-gold sm:flex"
+              className="flex h-10 w-10 items-center justify-center px-2 text-[0.72rem] tracking-widest text-bone/70 transition-colors hover:text-gold sm:w-auto sm:gap-1.5 sm:justify-start sm:flex"
               aria-label="switch language"
             >
               <Globe className="h-4 w-4" />
-              {lang === "ar" ? "EN" : "AR"}
+              <span className="hidden sm:inline">{lang === "ar" ? "EN" : "AR"}</span>
             </button>
             <button
               onClick={() => cart.setOpen(true)}
@@ -111,14 +106,19 @@ export function Navbar() {
             </Link>
             <button
               onClick={() => setMobileOpen(true)}
-              className="grid h-10 w-10 place-items-center text-bone transition-colors hover:text-gold lg:hidden"
+              className="hidden h-10 w-10 place-items-center text-bone transition-colors hover:text-gold md:grid lg:hidden"
               aria-label={L("القائمة", "Menu")}
             >
               <Menu className="h-5 w-5" />
             </button>
           </div>
         </div>
-        <div className={cn("hairline transition-opacity duration-700", scrolled ? "opacity-100" : "opacity-0")} />
+        <div
+          className={cn(
+            "hairline transition-opacity duration-700",
+            scrolled ? "opacity-100" : "opacity-0",
+          )}
+        />
       </header>
 
       {/* Full-screen premium mobile menu */}
@@ -150,9 +150,7 @@ export function Navbar() {
                 <span className="font-display text-2xl text-bone transition-colors group-hover:text-gold">
                   {L(l.ar, l.en)}
                 </span>
-                <span className="text-[0.65rem] tracking-[0.25em] text-gold/50">
-                  0{i + 1}
-                </span>
+                <span className="text-[0.65rem] tracking-[0.25em] text-gold/50">0{i + 1}</span>
               </Link>
             ))}
             <Link

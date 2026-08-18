@@ -1,6 +1,6 @@
 /**
- * Central restaurant configuration — DEMO values.
- * Replace with real values / backend data later.
+ * Central restaurant configuration. Contact information remains editable data
+ * once the production CMS is connected.
  */
 export const restaurant = {
   nameAr: "مطعم الكمال",
@@ -10,9 +10,9 @@ export const restaurant = {
   headlineAr: "نكهة الكمال",
   phone: "+962 7 9000 0000",
   whatsapp: "962790000000",
-  addressAr: "شارع الملكة رانيا، خلدا — عمّان، الأردن",
-  addressEn: "Queen Rania St, Khalda — Amman, Jordan",
-  mapsUrl: "https://maps.google.com/?q=Amman+Jordan",
+  addressAr: "الرصيفة، الزرقاء، الأردن",
+  addressEn: "Russeifa, Zarqa, Jordan",
+  mapsUrl: "https://maps.app.goo.gl/iQJGggKsrK5r3Txm9",
   currencyAr: "د.أ",
   currencyEn: "JOD",
   deliveryFeeDefault: 1.5,
@@ -23,10 +23,19 @@ export const restaurant = {
     tiktok: "https://tiktok.com",
   },
   hours: [
-    { daysAr: "السبت – الخميس", daysEn: "Saturday – Thursday", timeAr: "٧:٠٠ ص – ١٢:٠٠ م", timeEn: "7:00 AM – 12:00 AM" },
-    { daysAr: "الجمعة", daysEn: "Friday", timeAr: "٨:٠٠ ص – ١٢:٠٠ م", timeEn: "8:00 AM – 12:00 AM" },
+    {
+      daysAr: "السبت – الخميس",
+      daysEn: "Saturday – Thursday",
+      timeAr: "٧:٠٠ ص – ١٢:٠٠ م",
+      timeEn: "7:00 AM – 12:00 AM",
+    },
+    {
+      daysAr: "الجمعة",
+      daysEn: "Friday",
+      timeAr: "٨:٠٠ ص – ١٢:٠٠ م",
+      timeEn: "8:00 AM – 12:00 AM",
+    },
   ],
-  adminDemoPassword: "alkamal@2026",
 } as const;
 
 export type Restaurant = typeof restaurant;

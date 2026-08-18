@@ -45,8 +45,7 @@ export function ProductSheet({ product, onClose }: Props) {
 
   if (!product) return null;
 
-  const unit =
-    product.price - (product.discount ?? 0) + extras.reduce((s, e) => s + e.price, 0);
+  const unit = product.price - (product.discount ?? 0) + extras.reduce((s, e) => s + e.price, 0);
 
   const submit = () => {
     add({ product, qty, extras, ...(note.trim() ? { note: note.trim() } : {}) });
@@ -65,7 +64,7 @@ export function ProductSheet({ product, onClose }: Props) {
         className="absolute inset-0 bg-ink/85 backdrop-blur-md animate-in fade-in duration-500"
       />
       <div
-        className="relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden border border-gold/25 bg-[color:var(--ink)] shadow-[var(--shadow-lux)] sm:max-h-[88vh] sm:max-w-4xl sm:flex-row"
+        className="relative z-10 flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-t-2xl border border-gold/25 bg-[color:var(--ink)] shadow-[var(--shadow-lux)] sm:max-h-[88vh] sm:max-w-4xl sm:flex-row sm:rounded-none"
         style={{ animation: "sheet-up .6s cubic-bezier(0.16,1,0.3,1) both" }}
       >
         <button
@@ -76,7 +75,7 @@ export function ProductSheet({ product, onClose }: Props) {
           <X className="h-4 w-4" />
         </button>
 
-        <div className="relative h-56 shrink-0 sm:h-auto sm:w-[45%]">
+        <div className="relative h-48 shrink-0 sm:h-auto sm:w-[45%]">
           <FoodImage
             src={product.image}
             alt={L(product.nameAr, product.nameEn)}
@@ -87,7 +86,7 @@ export function ProductSheet({ product, onClose }: Props) {
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 veil sm:hidden" />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+        <div className="flex-1 overflow-y-auto p-4 pb-5 sm:p-8">
           <span className="eyebrow">{product.nameEn}</span>
           <h3 className="mt-2 text-2xl text-bone sm:text-3xl">
             {L(product.nameAr, product.nameEn)}
@@ -109,9 +108,7 @@ export function ProductSheet({ product, onClose }: Props) {
                     <button
                       key={e.id}
                       onClick={() =>
-                        setChosen((prev) =>
-                          on ? prev.filter((x) => x !== e.id) : [...prev, e.id],
-                        )
+                        setChosen((prev) => (on ? prev.filter((x) => x !== e.id) : [...prev, e.id]))
                       }
                       className={cn(
                         "flex items-center justify-between border px-4 py-3 text-sm transition-all duration-400",
@@ -132,9 +129,7 @@ export function ProductSheet({ product, onClose }: Props) {
           ) : null}
 
           <div className="mt-7">
-            <p className="text-xs tracking-[0.2em] text-gold/90">
-              {L("ملاحظات", "NOTES")}
-            </p>
+            <p className="text-xs tracking-[0.2em] text-gold/90">{L("ملاحظات", "NOTES")}</p>
             <textarea
               value={note}
               onChange={(ev) => setNote(ev.target.value)}
@@ -144,7 +139,7 @@ export function ProductSheet({ product, onClose }: Props) {
             />
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
+          <div className="sticky bottom-0 -mx-4 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border bg-ink/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:border-t sm:bg-transparent sm:p-0 sm:pt-6">
             <div className="flex items-center border border-gold/30">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}

@@ -108,26 +108,26 @@ export function ProductCard({ product, onOpen, layout = "tall", className }: Pro
     <button
       onClick={() => onOpen(product)}
       className={cn(
-        "group flex w-full flex-col border border-border bg-charcoal/40 text-start transition-all duration-500 hover:border-gold/45",
+        "group flex w-full flex-row border border-border bg-charcoal/40 p-3 text-start transition-all duration-500 hover:border-gold/45 sm:flex-col sm:p-0",
         className,
       )}
     >
-      <span className="relative block overflow-hidden">
+      <span className="relative block w-28 shrink-0 overflow-hidden sm:w-auto">
         <FoodImage
           src={product.image}
           alt={L(product.nameAr, product.nameEn)}
-          className="aspect-[5/4] w-full"
+          className="h-full w-full aspect-square sm:aspect-[5/4]"
         />
         <span className="absolute start-3 top-3 flex flex-col items-start gap-1">{badge}</span>
       </span>
-      <span className="flex flex-1 flex-col p-5">
+      <span className="flex min-w-0 flex-1 flex-col px-4 py-1 sm:p-5">
         <span className="font-display text-lg leading-snug text-bone">
           {L(product.nameAr, product.nameEn)}
         </span>
-        <span className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+        <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:mt-2">
           {L(product.descAr, product.descEn)}
         </span>
-        <span className="mt-auto flex items-center justify-between pt-5">
+        <span className="mt-auto flex items-center justify-between pt-2 sm:pt-5">
           <span className="text-gold">
             <Price value={price} />
             {product.discount ? (

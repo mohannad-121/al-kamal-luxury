@@ -71,7 +71,7 @@
   --secondary: oklch(0.235 0.012 60);
   --secondary-foreground: oklch(0.966 0.012 85);
   --muted: oklch(0.235 0.012 60);
-  --muted-foreground: oklch(0.70 0.014 80);
+  --muted-foreground: oklch(0.7 0.014 80);
   --accent: oklch(0.775 0.104 79);
   --accent-foreground: oklch(0.145 0.004 60);
   --destructive: oklch(0.56 0.19 25);
@@ -93,7 +93,12 @@
     oklch(0.12 0.004 60 / 55%) 45%,
     transparent 90%
   );
-  --gradient-gold: linear-gradient(100deg, var(--gold-soft), var(--gold) 45%, oklch(0.62 0.09 70) 100%);
+  --gradient-gold: linear-gradient(
+    100deg,
+    var(--gold-soft),
+    var(--gold) 45%,
+    oklch(0.62 0.09 70) 100%
+  );
   --gradient-hairline: linear-gradient(
     to right,
     transparent,
@@ -113,6 +118,7 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    background: var(--ink);
   }
 
   body {
@@ -121,6 +127,7 @@
     font-family: var(--font-sans);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
   }
 
   h1,
@@ -147,6 +154,23 @@
   ::-webkit-scrollbar-thumb {
     background: oklch(0.716 0.107 78.5 / 35%);
     border-radius: 99px;
+  }
+}
+
+@media (max-width: 767px) {
+  main {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 }
 
@@ -184,11 +208,7 @@
 @utility lux-frame {
   position: relative;
   border: 1px solid oklch(0.716 0.107 78.5 / 22%);
-  background: linear-gradient(
-    160deg,
-    oklch(0.21 0.008 60) 0%,
-    oklch(0.16 0.005 60) 100%
-  );
+  background: linear-gradient(160deg, oklch(0.21 0.008 60) 0%, oklch(0.16 0.005 60) 100%);
 }
 
 @utility grain {
@@ -198,10 +218,7 @@
     inset: 0;
     pointer-events: none;
     opacity: 0.35;
-    background-image: radial-gradient(
-      oklch(1 0 0 / 4%) 0.5px,
-      transparent 0.5px
-    );
+    background-image: radial-gradient(oklch(1 0 0 / 4%) 0.5px, transparent 0.5px);
     background-size: 3px 3px;
   }
 }

@@ -27,13 +27,11 @@ export function CartDrawer() {
         onClick={() => cart.setOpen(false)}
         className="absolute inset-0 bg-ink/85 backdrop-blur-md animate-in fade-in duration-400"
       />
-      <aside className="absolute inset-y-0 end-0 flex w-full flex-col border-s border-gold/25 bg-[color:var(--ink)] shadow-[var(--shadow-lux)] animate-in slide-in-from-bottom-8 duration-500 sm:max-w-md sm:slide-in-from-bottom-0">
-        <header className="flex items-center justify-between border-b border-border px-6 py-5">
+      <aside className="absolute inset-y-0 end-0 flex w-full flex-col border-s border-gold/25 bg-[color:var(--ink)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-lux)] animate-in slide-in-from-bottom-8 duration-500 sm:max-w-md sm:pb-0 sm:slide-in-from-bottom-0">
+        <header className="flex items-center justify-between border-b border-border px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:py-5">
           <div>
             <p className="eyebrow">{L("طلبك", "YOUR ORDER")}</p>
-            <h2 className="mt-1 text-xl text-bone">
-              {L("سلة الكمال", "Al Kamal Cart")}
-            </h2>
+            <h2 className="mt-1 text-xl text-bone">{L("سلة الكمال", "Al Kamal Cart")}</h2>
           </div>
           <button
             onClick={() => cart.setOpen(false)}
@@ -66,7 +64,7 @@ export function CartDrawer() {
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
               <ul className="space-y-4">
                 {cart.lines.map((line) => (
                   <li key={line.lineId} className="flex gap-3 border-b border-border/70 pb-4">
@@ -129,27 +127,31 @@ export function CartDrawer() {
               </ul>
             </div>
 
-            <footer className="border-t border-border bg-charcoal/40 px-6 py-5">
+            <footer className="border-t border-border bg-charcoal/40 px-4 py-5 sm:px-6">
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <dt>{L("المجموع", "Subtotal")}</dt>
-                  <dd><Price value={cart.subtotal} /></dd>
+                  <dd>
+                    <Price value={cart.subtotal} />
+                  </dd>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <dt>{L("التوصيل", "Delivery")}</dt>
-                  <dd><Price value={cart.delivery} /></dd>
+                  <dd>
+                    <Price value={cart.delivery} />
+                  </dd>
                 </div>
                 {cart.discount > 0 ? (
                   <div className="flex justify-between text-gold">
                     <dt>{L("خصم تجريبي", "Demo discount")}</dt>
-                    <dd>− <Price value={cart.discount} /></dd>
+                    <dd>
+                      − <Price value={cart.discount} />
+                    </dd>
                   </div>
                 ) : null}
                 <div className="hairline my-3" />
                 <div className="flex items-baseline justify-between">
-                  <dt className="font-display text-base text-bone">
-                    {L("الإجمالي", "Total")}
-                  </dt>
+                  <dt className="font-display text-base text-bone">{L("الإجمالي", "Total")}</dt>
                   <dd className="font-display text-xl text-gold">
                     <Price value={cart.total} />
                   </dd>

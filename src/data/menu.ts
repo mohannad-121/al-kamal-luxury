@@ -7,6 +7,14 @@ import sujuk from "@/assets/sujuk-egg-sandwich.jpg.asset.json";
 import potato from "@/assets/potato-egg-sandwich.jpg.asset.json";
 import galayet from "@/assets/galayet.jpg.asset.json";
 
+export const hiddenProductIds = new Set([
+  "p-potato-eggs",
+  "p-breakfast-tray",
+  "p-tahini",
+  "p-hummus-meat",
+  "p-eggs-sujuk",
+]);
+
 export const images = {
   falafel: falafel.url,
   wrap: wrap.url,
@@ -33,7 +41,7 @@ export const products: Product[] = [
     nameAr: "فلافل الكمال",
     nameEn: "Al Kamal Falafel",
     descAr: "مقرمشة من برا، طرية من جوا، بخلطة بقدونس وكزبرة نحضرها كل صباح.",
-    descEn: "Crisp outside, tender inside — fried fresh through the morning.",
+    descEn: "Crisp outside, tender inside, fried fresh through the morning.",
     price: 1.5,
     image: images.falafel,
     available: true,
@@ -141,7 +149,7 @@ export const products: Product[] = [
     categoryId: "breakfast",
     nameAr: "بطاطا وبيض",
     nameEn: "Potato & Eggs",
-    descAr: "بطاطا مقرمشة مع بيض داخل خبز ساخن — فطور الصباح.",
+    descAr: "بطاطا مقرمشة مع بيض داخل خبز ساخن، فطور الصباح.",
     descEn: "Crisp potatoes folded with eggs in warm bread.",
     price: 2.0,
     image: images.potato,
@@ -167,7 +175,7 @@ export const products: Product[] = [
     categoryId: "breakfast",
     nameAr: "صينية فطور الكمال",
     nameEn: "Al Kamal Breakfast Tray",
-    descAr: "حمص، فول، فلافل، قلاية، خضار وخبز — تكفي شخصين.",
+    descAr: "حمص، فول، فلافل، قلاية، خضار وخبز، تكفي شخصين.",
     descEn: "Hummus, foul, falafel, galayet, veg and bread for two.",
     price: 7.5,
     image: images.foul,
@@ -181,7 +189,7 @@ export const products: Product[] = [
     categoryId: "extras",
     nameAr: "طحينة بلدية",
     nameEn: "House Tahini",
-    descAr: "طحينة مخفوقة بالليمون — تناسب كل شي.",
+    descAr: "طحينة مخفوقة بالليمون، تناسب كل شي.",
     descEn: "Lemon-whipped tahini, goes with everything.",
     price: 0.5,
     image: images.hummusMeat,

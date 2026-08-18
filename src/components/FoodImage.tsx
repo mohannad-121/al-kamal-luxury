@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -20,6 +20,16 @@ export function FoodImage({
   zoom = true,
 }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // With SSR, an image can finish downloading before React hydrates and
+  // attaches onLoad. Check the cached-image state as well so it never remains
+  // transparent on the first local page load.
+  useEffect(() => {
+    const image = imageRef.current;
+    setLoaded(Boolean(image?.complete && image.naturalWidth > 0));
+  }, [src]);
+
   return (
     <div className={cn("relative overflow-hidden bg-charcoal", className)}>
       <div
@@ -29,6 +39,7 @@ export function FoodImage({
         )}
       />
       <img
+        ref={imageRef}
         src={src}
         alt={alt}
         loading={eager ? "eager" : "lazy"}
