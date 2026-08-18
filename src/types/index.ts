@@ -1,0 +1,105 @@
+export type Lang = "ar" | "en";
+
+export interface Category {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  image: string;
+  active: boolean;
+  order: number;
+}
+
+export interface Extra {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  price: number;
+}
+
+export interface Product {
+  id: string;
+  categoryId: string;
+  nameAr: string;
+  nameEn: string;
+  descAr: string;
+  descEn: string;
+  price: number;
+  discount?: number;
+  image: string;
+  available: boolean;
+  popular: boolean;
+  featured?: boolean;
+  extras?: Extra[];
+}
+
+export interface CartExtra {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  price: number;
+}
+
+export interface CartLine {
+  lineId: string;
+  productId: string;
+  nameAr: string;
+  nameEn: string;
+  image: string;
+  unitPrice: number;
+  qty: number;
+  extras: CartExtra[];
+  note?: string;
+}
+
+export type DeliveryType = "pickup" | "delivery";
+
+export type OrderStatus =
+  | "received"
+  | "preparing"
+  | "ready"
+  | "on_the_way"
+  | "delivered"
+  | "cancelled";
+
+export interface OrderItem {
+  nameAr: string;
+  qty: number;
+  extrasAr?: string[];
+  note?: string;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  customer: string;
+  phone: string;
+  type: DeliveryType;
+  area?: string;
+  address?: string;
+  items: OrderItem[];
+  subtotal: number;
+  delivery: number;
+  discount?: number;
+  total: number;
+  payment: string;
+  status: OrderStatus;
+  createdAt: string;
+  notes?: string;
+}
+
+export interface Review {
+  id: string;
+  name: string;
+  textAr: string;
+  textEn: string;
+  rating: number;
+  cityAr: string;
+}
+
+export interface DeliveryArea {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  fee: number;
+  active: boolean;
+}
