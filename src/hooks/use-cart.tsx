@@ -32,7 +32,7 @@ const KEY = "alkamal.cart.v1";
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [open, setOpen] = useState(false);
-  const [delivery, setDelivery] = useState(restaurant.deliveryFeeDefault);
+  const [delivery, setDelivery] = useState<number>(restaurant.deliveryFeeDefault);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
