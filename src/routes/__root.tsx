@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { LangProvider } from "@/hooks/use-lang";
 import { MenuProvider } from "@/hooks/use-menu";
+import { DailySalesProvider } from "@/hooks/use-daily-sales";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import kamalLogo from "../../logo/kamal.jpg";
 
@@ -132,8 +133,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <LangProvider>
         <MenuProvider>
-          <Outlet />
-          <MobileBottomNav />
+          <DailySalesProvider>
+            <Outlet />
+            <MobileBottomNav />
+          </DailySalesProvider>
         </MenuProvider>
       </LangProvider>
     </QueryClientProvider>

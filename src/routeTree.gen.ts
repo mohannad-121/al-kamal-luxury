@@ -16,6 +16,7 @@ import { Route as MenuRouteImport } from './routes/menu'
 import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
 import { Route as OrderNowRouteImport } from './routes/order-now'
 import { Route as TrackOrderRouteImport } from './routes/track-order'
+import { Route as AdminDailySalesRouteImport } from './routes/admin/daily-sales'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,34 +53,42 @@ const TrackOrderRoute = TrackOrderRouteImport.update({
   path: '/track-order',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDailySalesRoute = AdminDailySalesRouteImport.update({
+  id: '/daily-sales',
+  path: '/daily-sales',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
+  '/admin/daily-sales': typeof AdminDailySalesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
+  '/admin/daily-sales': typeof AdminDailySalesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
+  '/admin/daily-sales': typeof AdminDailySalesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/order-confirmed'
     | '/order-now'
     | '/track-order'
+    | '/admin/daily-sales'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/order-confirmed'
     | '/order-now'
     | '/track-order'
+    | '/admin/daily-sales'
   id:
     | '__root__'
     | '/'
@@ -109,11 +120,12 @@ export interface FileRouteTypes {
     | '/order-confirmed'
     | '/order-now'
     | '/track-order'
+    | '/admin/daily-sales'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CheckoutRoute: typeof CheckoutRoute
   MenuRoute: typeof MenuRoute
   OrderConfirmedRoute: typeof OrderConfirmedRoute
@@ -172,12 +184,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrackOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/daily-sales': {
+      id: '/admin/daily-sales'
+      path: '/daily-sales'
+      fullPath: '/admin/daily-sales'
+      preLoaderRoute: typeof AdminDailySalesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminDailySalesRoute: typeof AdminDailySalesRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminDailySalesRoute: AdminDailySalesRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   CheckoutRoute: CheckoutRoute,
   MenuRoute: MenuRoute,
   OrderConfirmedRoute: OrderConfirmedRoute,

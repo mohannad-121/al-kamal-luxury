@@ -7,7 +7,7 @@ export function MobileBottomNav() {
   const { L } = useLang();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  if (pathname === "/admin") return null;
+  if (pathname.startsWith("/admin")) return null;
 
   const itemClass = (active: boolean) =>
     cn(

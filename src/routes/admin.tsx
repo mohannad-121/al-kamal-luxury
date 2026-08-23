@@ -4,9 +4,10 @@ import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, UtensilsCrossed, X } from 
 import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
+import { ingredientDefinitions } from "@/data/inventory";
 import { useLang } from "@/hooks/use-lang";
 import { useMenu } from "@/hooks/use-menu";
-import type { Product } from "@/types";
+import type { Product, RecipeIngredient } from "@/types";
 
 export const Route = createFileRoute("/admin")({ component: Admin });
 
@@ -22,6 +23,7 @@ type ProductForm = {
   available: boolean;
   popular: boolean;
   featured: boolean;
+  recipe: RecipeIngredient[];
 };
 
 const activeCategories = categories.filter((category) => category.active);
@@ -39,6 +41,7 @@ function emptyForm(): ProductForm {
     available: true,
     popular: false,
     featured: false,
+    recipe: [],
   };
 }
 
@@ -55,6 +58,7 @@ function productToForm(product: Product): ProductForm {
     available: product.available,
     popular: product.popular,
     featured: Boolean(product.featured),
+    recipe: product.recipe ?? [],
   };
 }
 
@@ -74,6 +78,33 @@ function Admin() {
   const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
     setForm((current) => ({ ...current, [field]: value }));
     setError("");
+  };
+
+  const updateRecipe = (index: number, update: Partial<RecipeIngredient>) => {
+    setForm((current) => ({
+      ...current,
+      recipe: current.recipe.map((ingredient, recipeIndex) =>
+        recipeIndex === index ? { ...ingredient, ...update } : ingredient,
+      ),
+    }));
+    setError("");
+  };
+
+  const addRecipeIngredient = () => {
+    const firstIngredient = ingredientDefinitions[0];
+    if (!firstIngredient) return;
+    setForm((current) => ({
+      ...current,
+      recipe: [...current.recipe, { ingredientId: firstIngredient.id, quantity: 0 }],
+    }));
+    setError("");
+  };
+
+  const removeRecipeIngredient = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      recipe: current.recipe.filter((_, recipeIndex) => recipeIndex !== index),
+    }));
   };
 
   const startAdd = () => {
@@ -110,12 +141,19 @@ function Admin() {
       !form.nameEn.trim() ||
       !form.image.trim() ||
       !Number.isFinite(price) ||
-      price < 0
+      price < 0 ||
+      !form.recipe.length ||
+      form.recipe.some(
+        (ingredient) =>
+          !ingredientDefinitions.some((definition) => definition.id === ingredient.ingredientId) ||
+          !Number.isFinite(ingredient.quantity) ||
+          ingredient.quantity <= 0,
+      )
     ) {
       setError(
         L(
           "أضف الاسم بالعربية والإنجليزية والصورة وسعراً صحيحاً قبل الحفظ.",
-          "Add Arabic and English names, an image, and a valid price before saving.",
+          "Add Arabic and English names, an image, a valid price, and a recipe before saving.",
         ),
       );
       return;
@@ -142,6 +180,7 @@ function Admin() {
       available: form.available,
       popular: form.popular,
       featured: form.featured,
+      recipe: form.recipe,
       ...(existing?.extras ? { extras: existing.extras } : {}),
     };
 
@@ -176,12 +215,17 @@ function Admin() {
               <span className="text-[.62rem] tracking-[.2em] text-gold">AL KAMAL</span>
             </span>
           </div>
-          <Link to="/" className="text-sm text-bone/70 hover:text-gold">
-            <span className="inline-flex items-center gap-1">
-              <ArrowRight className="h-4 w-4" />
-              {L("الموقع", "View site")}
-            </span>
-          </Link>
+          <div className="flex items-center gap-4 text-sm">
+            <Link to="/admin/daily-sales" className="text-gold hover:text-gold-soft">
+              {L("الأداء اليومي", "Daily performance")}
+            </Link>
+            <Link to="/" className="text-bone/70 hover:text-gold">
+              <span className="inline-flex items-center gap-1">
+                <ArrowRight className="h-4 w-4" />
+                {L("الموقع", "View site")}
+              </span>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -379,6 +423,84 @@ function Admin() {
                     className="form-control"
                   />
                 </FormLabel>
+              </div>
+              <div className="border border-gold/20 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs tracking-wide text-gold/90">
+                      {L("وصفة الصنف", "Recipe per item")}
+                    </p>
+                    <p className="mt-1 text-xs text-bone/50">
+                      {L(
+                        "تُخصم الكميات تلقائياً عند تسجيل البيع اليومي.",
+                        "Amounts are deducted automatically when a sale is recorded.",
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addRecipeIngredient}
+                    className="inline-flex h-9 items-center gap-1 border border-gold/30 px-2 text-xs text-gold hover:border-gold"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {L("مكوّن", "Ingredient")}
+                  </button>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {form.recipe.map((ingredient, index) => {
+                    const definition = ingredientDefinitions.find(
+                      (item) => item.id === ingredient.ingredientId,
+                    );
+                    return (
+                      <div
+                        key={`${ingredient.ingredientId}-${index}`}
+                        className="grid grid-cols-[minmax(0,1fr)_5rem_auto_auto] items-center gap-2"
+                      >
+                        <select
+                          value={ingredient.ingredientId}
+                          onChange={(event) =>
+                            updateRecipe(index, { ingredientId: event.target.value })
+                          }
+                          className="form-control min-w-0"
+                        >
+                          {ingredientDefinitions.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {L(item.nameAr, item.nameEn)}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          value={ingredient.quantity || ""}
+                          onChange={(event) =>
+                            updateRecipe(index, { quantity: Number(event.target.value) })
+                          }
+                          className="form-control min-w-0"
+                          aria-label={L("الكمية", "Quantity")}
+                        />
+                        <span className="text-xs text-bone/50">{definition?.unit ?? ""}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeRecipeIngredient(index)}
+                          className="grid h-9 w-9 place-items-center border border-red-300/25 text-red-200 hover:border-red-300"
+                          aria-label={L("حذف المكوّن", "Remove ingredient")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {!form.recipe.length ? (
+                    <p className="text-xs text-amber-200">
+                      {L(
+                        "أضف مكوّناً واحداً على الأقل قبل الحفظ.",
+                        "Add at least one ingredient before saving.",
+                      )}
+                    </p>
+                  ) : null}
+                </div>
               </div>
               <FormLabel label={L("رابط الصورة", "Image URL")}>
                 <input

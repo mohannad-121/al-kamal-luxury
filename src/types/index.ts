@@ -16,6 +16,23 @@ export interface Extra {
   price: number;
 }
 
+/** Inventory uses base units so recipes can be added together safely. */
+export type IngredientUnit = "g" | "ml" | "piece";
+
+export interface RecipeIngredient {
+  ingredientId: string;
+  quantity: number;
+}
+
+export interface IngredientDefinition {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  unit: IngredientUnit;
+  initialQuantity: number;
+  lowStockThreshold: number;
+}
+
 export interface Product {
   id: string;
   categoryId: string;
@@ -30,6 +47,30 @@ export interface Product {
   popular: boolean;
   featured?: boolean;
   extras?: Extra[];
+  recipe?: RecipeIngredient[];
+}
+
+export interface DailySaleItem {
+  productId: string;
+  nameAr: string;
+  nameEn: string;
+  categoryId: string;
+  quantity: number;
+  unitPrice: number;
+  revenue: number;
+}
+
+export interface DailyReport {
+  id: string;
+  date: string;
+  closedAt: string;
+  totalRevenue: number;
+  totalItemsSold: number;
+  salesEntries: number;
+  itemSales: DailySaleItem[];
+  ingredientUsage: Record<string, number>;
+  inventory: Record<string, number>;
+  bestSellingProduct?: string;
 }
 
 export interface CartExtra {
@@ -54,12 +95,7 @@ export interface CartLine {
 export type DeliveryType = "pickup" | "delivery";
 
 export type OrderStatus =
-  | "received"
-  | "preparing"
-  | "ready"
-  | "on_the_way"
-  | "delivered"
-  | "cancelled";
+  "received" | "preparing" | "ready" | "on_the_way" | "delivered" | "cancelled";
 
 export interface OrderItem {
   nameAr: string;

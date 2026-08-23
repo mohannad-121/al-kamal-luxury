@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { hiddenProductIds, products as defaultProducts } from "@/data/menu";
+import { defaultRecipes } from "@/data/inventory";
 import type { Product } from "@/types";
 
 interface MenuContextValue {
@@ -19,7 +20,9 @@ interface MenuContextValue {
 
 const STORAGE_KEY = "alkamal.menu.v1";
 const MenuContext = createContext<MenuContextValue | null>(null);
-const initialProducts = defaultProducts.filter((product) => !hiddenProductIds.has(product.id));
+const initialProducts = defaultProducts
+  .filter((product) => !hiddenProductIds.has(product.id))
+  .map((product) => ({ ...product, recipe: product.recipe ?? defaultRecipes[product.id] ?? [] }));
 
 export function MenuProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -30,7 +33,14 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as unknown;
-        if (Array.isArray(parsed)) setProducts(parsed as Product[]);
+        if (Array.isArray(parsed)) {
+          setProducts(
+            (parsed as Product[]).map((product) => ({
+              ...product,
+              recipe: product.recipe ?? defaultRecipes[product.id] ?? [],
+            })),
+          );
+        }
       }
     } catch {
       // Keep the built-in menu if saved data cannot be read.
@@ -52,7 +62,14 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       if (event.key !== STORAGE_KEY || !event.newValue) return;
       try {
         const parsed = JSON.parse(event.newValue) as unknown;
-        if (Array.isArray(parsed)) setProducts(parsed as Product[]);
+        if (Array.isArray(parsed)) {
+          setProducts(
+            (parsed as Product[]).map((product) => ({
+              ...product,
+              recipe: product.recipe ?? defaultRecipes[product.id] ?? [],
+            })),
+          );
+        }
       } catch {
         // Ignore malformed data written by another browser context.
       }
