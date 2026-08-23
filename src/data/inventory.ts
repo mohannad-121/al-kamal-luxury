@@ -119,23 +119,11 @@ export const defaultRecipes: Record<string, RecipeIngredient[]> = {
     { ingredientId: "vegetables", quantity: 20 },
     { ingredientId: "oil", quantity: 15 },
   ],
-  "p-hummus": [
-    { ingredientId: "hummus", quantity: 200 },
-    { ingredientId: "chickpeas", quantity: 120 },
-    { ingredientId: "tahini", quantity: 25 },
-    { ingredientId: "oil", quantity: 10 },
-    { ingredientId: "bread", quantity: 1 },
-  ],
   "p-hummus-meat": [
     { ingredientId: "hummus", quantity: 200 },
     { ingredientId: "chickpeas", quantity: 120 },
     { ingredientId: "tahini", quantity: 25 },
     { ingredientId: "meat", quantity: 80 },
-    { ingredientId: "oil", quantity: 10 },
-    { ingredientId: "bread", quantity: 1 },
-  ],
-  "p-foul": [
-    { ingredientId: "foul", quantity: 250 },
     { ingredientId: "oil", quantity: 10 },
     { ingredientId: "bread", quantity: 1 },
   ],

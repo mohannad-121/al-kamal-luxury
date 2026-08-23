@@ -73,6 +73,7 @@ function Admin() {
     deleteProduct,
     refresh,
     seedStarterMenu,
+    syncHummusAndFoulSizes,
   } = useMenu();
   const { session, isAdmin, loading: authLoading } = useAdminAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -167,7 +168,6 @@ function Admin() {
       !form.image.trim() ||
       !Number.isFinite(price) ||
       price < 0 ||
-      !form.recipe.length ||
       form.recipe.some(
         (ingredient) =>
           !ingredients.some((definition) => definition.id === ingredient.ingredientId) ||
@@ -246,6 +246,17 @@ function Admin() {
     }
   };
 
+  const addHummusAndFoulSizes = async () => {
+    try {
+      setError("");
+      await syncHummusAndFoulSizes();
+    } catch (syncError) {
+      setError(
+        syncError instanceof Error ? syncError.message : "Unable to add the Hummus and Foul sizes.",
+      );
+    }
+  };
+
   return (
     <main className="min-h-screen bg-ink pb-10 text-bone">
       <header className="border-b border-gold/20 bg-charcoal/70 px-5 py-4 backdrop-blur sm:px-8">
@@ -289,6 +300,13 @@ function Admin() {
               )}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => void addHummusAndFoulSizes()}
+            className="min-h-11 border border-gold/35 px-4 text-sm text-gold hover:bg-gold hover:text-ink"
+          >
+            {L("إضافة أحجام الحمص والفول", "Add Hummus & Foul sizes")}
+          </button>
           <button
             type="button"
             onClick={startAdd}
@@ -549,8 +567,8 @@ function Admin() {
                   {!form.recipe.length ? (
                     <p className="text-xs text-amber-200">
                       {L(
-                        "أضف مكوّناً واحداً على الأقل قبل الحفظ.",
-                        "Add at least one ingredient before saving.",
+                        "لا توجد وصفة بعد؛ تسجيل المبيعات لن يخصم من المخزون لهذا الصنف.",
+                        "No recipe yet — sales for this item will not deduct inventory.",
                       )}
                     </p>
                   ) : null}
