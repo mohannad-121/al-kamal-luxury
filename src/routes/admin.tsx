@@ -1,5 +1,5 @@
 import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, UtensilsCrossed, X } from "lucide-react";
 import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
@@ -65,6 +65,7 @@ function productToForm(product: Product): ProductForm {
 function Admin() {
   const { L } = useLang();
   const { products, addProduct, updateProduct, deleteProduct } = useMenu();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [error, setError] = useState("");
@@ -74,6 +75,8 @@ function Admin() {
     () => [...products].sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
     [products],
   );
+
+  if (pathname !== "/admin") return <Outlet />;
 
   const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
     setForm((current) => ({ ...current, [field]: value }));
