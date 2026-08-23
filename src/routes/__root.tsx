@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 import { LangProvider } from "@/hooks/use-lang";
 import { MenuProvider } from "@/hooks/use-menu";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import kamalLogo from "../../logo/kamal.jpg";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -99,9 +100,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: kamalLogo, type: "image/jpeg" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: kamalLogo },
     ],
   }),
   shellComponent: RootShell,
