@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Globe, Menu, Search, ShoppingBag, X } from "lucide-react";
-import { GoldButton } from "./GoldButton";
-import { useCart } from "@/hooks/use-cart";
+import { Globe, Menu, Search, X } from "lucide-react";
 import { useLang } from "@/hooks/use-lang";
 import { restaurant } from "@/config/restaurant";
 import { cn } from "@/lib/utils";
@@ -10,13 +8,13 @@ import { cn } from "@/lib/utils";
 const links = [
   { to: "/", ar: "الرئيسية", en: "Home" },
   { to: "/menu", ar: "المنيو", en: "Menu" },
+  { to: "/order-now", ar: "اطلب الآن", en: "Order now" },
   { to: "/menu", hash: "popular", ar: "الأكثر طلباً", en: "Popular" },
   { to: "/", hash: "location", ar: "موقعنا", en: "Find us" },
 ] as const;
 
 export function Navbar() {
   const { L, toggle, lang } = useLang();
-  const cart = useCart();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -90,21 +88,6 @@ export function Navbar() {
               <span className="hidden sm:inline">{lang === "ar" ? "EN" : "AR"}</span>
             </button>
             <button
-              onClick={() => cart.setOpen(true)}
-              className="relative grid h-10 w-10 place-items-center text-bone transition-colors hover:text-gold"
-              aria-label={L("الطلب", "Cart")}
-            >
-              <ShoppingBag className="h-[19px] w-[19px]" />
-              {cart.count > 0 ? (
-                <span className="absolute -top-0.5 end-0 grid h-[18px] min-w-[18px] place-items-center bg-[image:var(--gradient-gold)] px-1 text-[0.62rem] font-bold text-ink animate-in zoom-in duration-300">
-                  {cart.count}
-                </span>
-              ) : null}
-            </button>
-            <Link to="/menu" className="hidden md:block">
-              <GoldButton size="sm">{L("اطلب الآن", "Order now")}</GoldButton>
-            </Link>
-            <button
               onClick={() => setMobileOpen(true)}
               className="hidden h-10 w-10 place-items-center text-bone transition-colors hover:text-gold md:grid lg:hidden"
               aria-label={L("القائمة", "Menu")}
@@ -153,24 +136,8 @@ export function Navbar() {
                 <span className="text-[0.65rem] tracking-[0.25em] text-gold/50">0{i + 1}</span>
               </Link>
             ))}
-            <Link
-              to="/track-order"
-              onClick={() => setMobileOpen(false)}
-              className="group flex items-center justify-between border-b border-border/60 py-5 animate-rise"
-              style={{ animationDelay: "350ms" }}
-            >
-              <span className="font-display text-2xl text-bone group-hover:text-gold">
-                {L("تتبع الطلب", "Track order")}
-              </span>
-              <span className="text-[0.65rem] tracking-[0.25em] text-gold/50">06</span>
-            </Link>
           </nav>
-          <div className="space-y-3 px-7 pb-10">
-            <Link to="/menu" onClick={() => setMobileOpen(false)} className="block">
-              <GoldButton className="w-full" size="lg">
-                {L("اطلب الآن", "Order now")}
-              </GoldButton>
-            </Link>
+          <div className="px-7 pb-10">
             <button
               onClick={toggle}
               className="w-full border border-gold/30 py-3 text-sm text-bone/80 transition-colors hover:border-gold hover:text-gold"

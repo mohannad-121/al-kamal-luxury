@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ChevronLeft, MapPin, Sparkles, Star } from "lucide-react";
+import { ChevronLeft, MapPin, Sparkles, Star } from "lucide-react";
 import storefront from "@/assets/storefront.jpg.asset.json";
 import chef from "@/assets/chef.jpg.asset.json";
 import { Navbar } from "@/components/Navbar";
@@ -11,13 +11,11 @@ import { hiddenProductIds, images, products } from "@/data/menu";
 import { categories } from "@/data/categories";
 import { restaurant } from "@/config/restaurant";
 import { useLang } from "@/hooks/use-lang";
-import { useProductSheet } from "@/hooks/use-product-sheet";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
   const { L } = useLang();
-  const { openProduct } = useProductSheet();
   const featured = products
     .filter((product) => product.featured && !hiddenProductIds.has(product.id))
     .slice(0, 4);
@@ -52,15 +50,9 @@ function Index() {
                 "Jordanian favorites, fresh ingredients and a recipe perfected every morning.",
               )}
             </p>
-            <div className="mt-7 flex gap-3 sm:mt-9 sm:flex-wrap">
-              <Link to="/menu" className="flex-1 sm:flex-none">
+            <div className="mt-7 sm:mt-9">
+              <Link to="/menu" className="inline-block w-full sm:w-auto">
                 <GoldButton size="lg" className="w-full sm:w-auto">
-                  {L("اطلب الآن", "Order now")}
-                  <ArrowLeft className="h-4 w-4" />
-                </GoldButton>
-              </Link>
-              <Link to="/menu" className="flex-1 sm:flex-none">
-                <GoldButton variant="outline" size="lg" className="w-full sm:w-auto">
                   {L("اكتشف المنيو", "Explore menu")}
                 </GoldButton>
               </Link>
@@ -122,7 +114,7 @@ function Index() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {featured.map((product) => (
-              <ProductCard key={product.id} product={product} onOpen={openProduct} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleCheck, Clock3, Search } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { GoldButton } from "@/components/GoldButton";
@@ -10,6 +10,9 @@ import { trackOrder } from "@/services";
 import type { Order } from "@/types";
 
 export const Route = createFileRoute("/track-order")({
+  beforeLoad: () => {
+    throw redirect({ to: "/menu", search: { category: "all" } });
+  },
   validateSearch: (search: Record<string, unknown>) => ({
     order: typeof search.order === "string" ? search.order : "",
   }),

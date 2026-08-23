@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Check, ChevronLeft, LoaderCircle } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { GoldButton } from "@/components/GoldButton";
@@ -10,7 +10,12 @@ import { useLang } from "@/hooks/use-lang";
 import { deliveryAreas } from "@/data/orders";
 import { createOrder } from "@/services";
 
-export const Route = createFileRoute("/checkout")({ component: Checkout });
+export const Route = createFileRoute("/checkout")({
+  beforeLoad: () => {
+    throw redirect({ to: "/menu", search: { category: "all" } });
+  },
+  component: Checkout,
+});
 
 const fieldClass =
   "mt-2 h-13 w-full border border-gold/20 bg-ink/60 px-4 text-base text-bone outline-none transition-colors placeholder:text-muted-foreground focus:border-gold/60 sm:h-12 sm:text-sm";

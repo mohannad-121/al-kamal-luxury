@@ -1,12 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Clock3, House, MapPin, ShoppingBag, UtensilsCrossed } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
+import { House, MapPin, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { useLang } from "@/hooks/use-lang";
 import { cn } from "@/lib/utils";
 
 export function MobileBottomNav() {
   const { L } = useLang();
-  const cart = useCart();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   if (pathname === "/admin") return null;
@@ -31,25 +29,9 @@ export function MobileBottomNav() {
           <UtensilsCrossed className="h-5 w-5" />
           <span>{L("المنيو", "Menu")}</span>
         </Link>
-        <button
-          type="button"
-          onClick={() => cart.setOpen(true)}
-          className={itemClass(cart.open)}
-          aria-label={L("السلة", "Cart")}
-        >
-          <span className="relative">
-            <ShoppingBag className="h-5 w-5" />
-            {cart.count > 0 ? (
-              <span className="absolute -end-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[0.56rem] font-bold text-ink">
-                {cart.count}
-              </span>
-            ) : null}
-          </span>
-          <span>{L("السلة", "Cart")}</span>
-        </button>
-        <Link to="/track-order" className={itemClass(pathname === "/track-order")}>
-          <Clock3 className="h-5 w-5" />
-          <span>{L("تتبع", "Track")}</span>
+        <Link to="/order-now" className={itemClass(pathname === "/order-now")}>
+          <ShoppingBag className="h-5 w-5" />
+          <span>{L("اطلب", "Order")}</span>
         </Link>
         <Link to="/" hash="location" className={itemClass(false)}>
           <MapPin className="h-5 w-5" />

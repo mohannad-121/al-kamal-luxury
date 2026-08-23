@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
-import { GoldButton } from "@/components/GoldButton";
 import { categories } from "@/data/categories";
 import { hiddenProductIds, products } from "@/data/menu";
 import { useLang } from "@/hooks/use-lang";
-import { useProductSheet } from "@/hooks/use-product-sheet";
 
 export const Route = createFileRoute("/menu")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -19,7 +17,6 @@ export const Route = createFileRoute("/menu")({
 
 function Menu() {
   const { L } = useLang();
-  const { openProduct } = useProductSheet();
   const { category: initialCategory } = Route.useSearch();
   const [active, setActive] = useState(initialCategory);
   const [term, setTerm] = useState("");
@@ -48,7 +45,7 @@ function Menu() {
           <p className="mt-4 max-w-2xl leading-7 text-muted-foreground">
             {L(
               "أكل شعبي محضّر على الطلب، خذ وقتك، وخلي الباقي علينا.",
-              "Jordanian comfort food prepared to order. Take your time; we’ll handle the rest.",
+              "Jordanian comfort food prepared fresh every day.",
             )}
           </p>
         </div>
@@ -100,7 +97,7 @@ function Menu() {
           {visible.length ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
               {visible.map((product) => (
-                <ProductCard key={product.id} product={product} onOpen={openProduct} />
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
@@ -114,29 +111,19 @@ function Menu() {
                   "Try another search or browse all dishes.",
                 )}
               </p>
-              <GoldButton
-                variant="outline"
-                className="mt-6"
+              <button
+                type="button"
+                className="mt-6 border border-gold/30 px-4 py-2 text-sm text-gold transition-colors hover:border-gold hover:bg-gold/10"
                 onClick={() => {
                   setTerm("");
                   setActive("all");
                 }}
               >
                 {L("عرض الكل", "Show all")}
-              </GoldButton>
+              </button>
             </div>
           )}
         </div>
-      </section>
-      <section className="bg-ink px-5 py-16 text-center sm:px-8">
-        <p className="font-display text-3xl text-bone">
-          {L("بدك تتبع طلبك؟", "Want to track an order?")}
-        </p>
-        <Link to="/track-order">
-          <GoldButton variant="outline" className="mt-5">
-            {L("تتبع الطلب", "Track order")}
-          </GoldButton>
-        </Link>
       </section>
       <SiteFooter />
     </main>

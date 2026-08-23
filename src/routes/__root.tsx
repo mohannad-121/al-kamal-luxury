@@ -8,11 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Toaster } from "sonner";
 import { LangProvider } from "@/hooks/use-lang";
-import { CartProvider } from "@/hooks/use-cart";
-import { ProductSheetProvider } from "@/hooks/use-product-sheet";
-import { CartDrawer } from "@/components/CartDrawer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 import appCss from "../styles.css?url";
@@ -133,14 +129,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
-        <CartProvider>
-          <ProductSheetProvider>
-            <Outlet />
-            <CartDrawer />
-            <MobileBottomNav />
-            <Toaster theme="dark" position="bottom-center" richColors />
-          </ProductSheetProvider>
-        </CartProvider>
+        <Outlet />
+        <MobileBottomNav />
       </LangProvider>
     </QueryClientProvider>
   );

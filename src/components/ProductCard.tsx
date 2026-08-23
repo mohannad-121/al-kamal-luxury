@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import { FoodImage } from "./FoodImage";
 import { Price } from "./Price";
 import { useLang } from "@/hooks/use-lang";
@@ -7,12 +6,11 @@ import type { Product } from "@/types";
 
 interface Props {
   product: Product;
-  onOpen: (p: Product) => void;
   layout?: "tall" | "wide" | "feature";
   className?: string;
 }
 
-export function ProductCard({ product, onOpen, layout = "tall", className }: Props) {
+export function ProductCard({ product, layout = "tall", className }: Props) {
   const { L } = useLang();
   const price = product.price - (product.discount ?? 0);
 
@@ -31,18 +29,11 @@ export function ProductCard({ product, onOpen, layout = "tall", className }: Pro
     </>
   );
 
-  const addBtn = (
-    <span className="grid h-11 w-11 shrink-0 place-items-center border border-gold/40 text-gold transition-all duration-500 group-hover:bg-gold group-hover:text-ink">
-      <Plus className="h-4 w-4" />
-    </span>
-  );
-
   if (layout === "wide") {
     return (
-      <button
-        onClick={() => onOpen(product)}
+      <article
         className={cn(
-          "group flex w-full items-stretch gap-4 border border-border bg-charcoal/40 p-3 text-start transition-all duration-500 hover:border-gold/45 hover:bg-charcoal/70",
+          "flex w-full items-stretch gap-4 border border-border bg-charcoal/40 p-3 text-start",
           className,
         )}
       >
@@ -65,17 +56,15 @@ export function ProductCard({ product, onOpen, layout = "tall", className }: Pro
             <Price value={price} />
           </span>
         </span>
-        <span className="flex items-center pe-1">{addBtn}</span>
-      </button>
+      </article>
     );
   }
 
   if (layout === "feature") {
     return (
-      <button
-        onClick={() => onOpen(product)}
+      <article
         className={cn(
-          "group relative block w-full overflow-hidden border border-gold/20 text-start",
+          "relative block w-full overflow-hidden border border-gold/20 text-start",
           className,
         )}
       >
@@ -93,22 +82,20 @@ export function ProductCard({ product, onOpen, layout = "tall", className }: Pro
           <span className="mt-2 block max-w-md text-sm text-bone/70">
             {L(product.descAr, product.descEn)}
           </span>
-          <span className="mt-4 flex items-center justify-between">
+          <span className="mt-4 block">
             <span className="text-lg text-gold">
               <Price value={price} />
             </span>
-            {addBtn}
           </span>
         </span>
-      </button>
+      </article>
     );
   }
 
   return (
-    <button
-      onClick={() => onOpen(product)}
+    <article
       className={cn(
-        "group flex w-full flex-row border border-border bg-charcoal/40 p-3 text-start transition-all duration-500 hover:border-gold/45 sm:flex-col sm:p-0",
+        "flex w-full flex-row border border-border bg-charcoal/40 p-3 text-start sm:flex-col sm:p-0",
         className,
       )}
     >
@@ -136,9 +123,8 @@ export function ProductCard({ product, onOpen, layout = "tall", className }: Pro
               </span>
             ) : null}
           </span>
-          {addBtn}
         </span>
       </span>
-    </button>
+    </article>
   );
 }

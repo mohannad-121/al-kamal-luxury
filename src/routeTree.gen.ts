@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
+import { Route as OrderNowRouteImport } from './routes/order-now'
 import { Route as TrackOrderRouteImport } from './routes/track-order'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const OrderConfirmedRoute = OrderConfirmedRouteImport.update({
   path: '/order-confirmed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrderNowRoute = OrderNowRouteImport.update({
+  id: '/order-now',
+  path: '/order-now',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrackOrderRoute = TrackOrderRouteImport.update({
   id: '/track-order',
   path: '/track-order',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
 }
 export interface FileRoutesById {
@@ -70,15 +78,28 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/menu': typeof MenuRoute
   '/order-confirmed': typeof OrderConfirmedRoute
+  '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/admin' | '/checkout' | '/menu' | '/order-confirmed' | '/track-order'
+    | '/'
+    | '/admin'
+    | '/checkout'
+    | '/menu'
+    | '/order-confirmed'
+    | '/order-now'
+    | '/track-order'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/admin' | '/checkout' | '/menu' | '/order-confirmed' | '/track-order'
+    | '/'
+    | '/admin'
+    | '/checkout'
+    | '/menu'
+    | '/order-confirmed'
+    | '/order-now'
+    | '/track-order'
   id:
     | '__root__'
     | '/'
@@ -86,6 +107,7 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/menu'
     | '/order-confirmed'
+    | '/order-now'
     | '/track-order'
   fileRoutesById: FileRoutesById
 }
@@ -95,6 +117,7 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   MenuRoute: typeof MenuRoute
   OrderConfirmedRoute: typeof OrderConfirmedRoute
+  OrderNowRoute: typeof OrderNowRoute
   TrackOrderRoute: typeof TrackOrderRoute
 }
 
@@ -135,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderConfirmedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/order-now': {
+      id: '/order-now'
+      path: '/order-now'
+      fullPath: '/order-now'
+      preLoaderRoute: typeof OrderNowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/track-order': {
       id: '/track-order'
       path: '/track-order'
@@ -151,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   MenuRoute: MenuRoute,
   OrderConfirmedRoute: OrderConfirmedRoute,
+  OrderNowRoute: OrderNowRoute,
   TrackOrderRoute: TrackOrderRoute,
 }
 export const routeTree = rootRouteImport

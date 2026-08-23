@@ -22,8 +22,8 @@ export function SiteFooter() {
             <Link to="/menu" className="hover:text-gold">
               {L("المنيو", "Menu")}
             </Link>
-            <Link to="/track-order" className="hover:text-gold">
-              {L("تتبع الطلب", "Track order")}
+            <Link to="/order-now" className="hover:text-gold">
+              {L("اطلب الآن", "Order now")}
             </Link>
             <Link to="/" hash="location" className="hover:text-gold">
               {L("موقعنا", "Our location")}

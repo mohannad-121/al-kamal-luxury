@@ -13,6 +13,8 @@ export const restaurant = {
   addressAr: "الرصيفة، الزرقاء، الأردن",
   addressEn: "Russeifa, Zarqa, Jordan",
   mapsUrl: "https://maps.app.goo.gl/iQJGggKsrK5r3Txm9",
+  talabatUrl:
+    "https://www.talabat.com/jordan/%D9%85%D8%B7%D8%B9%D9%85-%D8%A7%D9%84%D9%83%D9%85%D8%A7%D9%84",
   currencyAr: "د.أ",
   currencyEn: "JOD",
   deliveryFeeDefault: 1.5,

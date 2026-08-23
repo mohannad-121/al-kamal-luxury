@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { GoldButton } from "@/components/GoldButton";
@@ -6,6 +6,9 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { useLang } from "@/hooks/use-lang";
 
 export const Route = createFileRoute("/order-confirmed")({
+  beforeLoad: () => {
+    throw redirect({ to: "/menu", search: { category: "all" } });
+  },
   validateSearch: (search: Record<string, unknown>) => ({
     order: typeof search.order === "string" ? search.order : "",
   }),
