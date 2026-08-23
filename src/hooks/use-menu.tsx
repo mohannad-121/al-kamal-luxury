@@ -24,7 +24,6 @@ interface MenuContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   seedStarterMenu: () => Promise<void>;
-  syncHummusAndFoulSizes: () => Promise<void>;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -59,15 +58,6 @@ type MenuRow = {
 const starterProducts = defaultProducts
   .filter((product) => !hiddenProductIds.has(product.id))
   .map((product) => ({ ...product, recipe: defaultRecipes[product.id] ?? [] }));
-
-const portionSizeProductIds = new Set([
-  "p-hummus",
-  "p-hummus-medium",
-  "p-hummus-large",
-  "p-foul",
-  "p-foul-medium",
-  "p-foul-large",
-]);
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
@@ -324,69 +314,6 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const syncHummusAndFoulSizes = useCallback(async () => {
-    const sizeProducts = starterProducts.filter((product) => portionSizeProductIds.has(product.id));
-
-    for (const product of sizeProducts) {
-      const categoryId = categoryRows.find((category) => category.slug === product.categoryId)?.id;
-      if (!categoryId) throw new Error("The Hummus or Foul category could not be found.");
-
-      const legacyName =
-        product.id === "p-hummus" ? "Hummus" : product.id === "p-foul" ? "Foul" : null;
-      let itemId: string | null = null;
-      const matchingNames = legacyName ? [product.nameEn, legacyName] : [product.nameEn];
-      const { data: existingItems, error: findError } = await supabase
-        .from("menu_items")
-        .select("id, name_en")
-        .eq("category_id", categoryId)
-        .eq("is_archived", false)
-        .in("name_en", matchingNames)
-        .limit(1);
-      if (findError) throw new Error(findError.message);
-
-      const values = {
-        category_id: categoryId,
-        name_ar: product.nameAr,
-        name_en: product.nameEn,
-        description_ar: product.descAr,
-        description_en: product.descEn,
-        price: product.price,
-        discount: 0,
-        image_url: product.image,
-        is_available: product.available,
-        is_popular: product.popular,
-        is_featured: Boolean(product.featured),
-      };
-
-      if (existingItems?.[0]) {
-        itemId = existingItems[0].id;
-        const { error: updateError } = await supabase
-          .from("menu_items")
-          .update(values)
-          .eq("id", itemId);
-        if (updateError) throw new Error(updateError.message);
-      } else {
-        const { data, error: insertError } = await supabase
-          .from("menu_items")
-          .insert(values)
-          .select("id")
-          .single();
-        if (insertError || !data) {
-          throw new Error(insertError?.message ?? "Unable to add the portion size.");
-        }
-        itemId = data.id;
-      }
-
-      const { error: recipeError } = await supabase
-        .from("menu_item_ingredients")
-        .delete()
-        .eq("menu_item_id", itemId);
-      if (recipeError) throw new Error(recipeError.message);
-    }
-
-    await refresh();
-  }, [categoryRows, refresh]);
-
   const value = useMemo(
     () => ({
       products,
@@ -395,7 +322,6 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       seedStarterMenu,
-      syncHummusAndFoulSizes,
       addProduct,
       updateProduct,
       deleteProduct,
@@ -409,7 +335,6 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       products,
       refresh,
       seedStarterMenu,
-      syncHummusAndFoulSizes,
       updateProduct,
     ],
   );

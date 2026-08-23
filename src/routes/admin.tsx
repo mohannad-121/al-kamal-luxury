@@ -5,6 +5,7 @@ import { FoodImage } from "@/components/FoodImage";
 import { AdminAccess } from "@/components/AdminAccess";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
+import { images } from "@/data/menu";
 import { useLang } from "@/hooks/use-lang";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useMenu } from "@/hooks/use-menu";
@@ -28,6 +29,21 @@ type ProductForm = {
 };
 
 const activeCategories = categories.filter((category) => category.active);
+
+type PortionSize = "small" | "medium" | "large";
+
+const portionOptions = {
+  hummus: [
+    { id: "small", nameAr: "حمص صغير", nameEn: "Hummus Small", price: 0.5 },
+    { id: "medium", nameAr: "حمص وسط", nameEn: "Hummus Medium", price: 0.65 },
+    { id: "large", nameAr: "حمص كبير", nameEn: "Hummus Large", price: 0.8 },
+  ],
+  foul: [
+    { id: "small", nameAr: "فول صغير", nameEn: "Foul Small", price: 0.6 },
+    { id: "medium", nameAr: "فول وسط", nameEn: "Foul Medium", price: 0.75 },
+    { id: "large", nameAr: "فول كبير", nameEn: "Foul Large", price: 0.9 },
+  ],
+} as const;
 
 function emptyForm(): ProductForm {
   return {
@@ -73,12 +89,12 @@ function Admin() {
     deleteProduct,
     refresh,
     seedStarterMenu,
-    syncHummusAndFoulSizes,
   } = useMenu();
   const { session, isAdmin, loading: authLoading } = useAdminAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [selectedPortion, setSelectedPortion] = useState<PortionSize | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -136,12 +152,22 @@ function Admin() {
   const startAdd = () => {
     setEditingId(null);
     setForm(emptyForm());
+    setSelectedPortion(null);
     setError("");
   };
 
   const startEdit = (product: Product) => {
     setEditingId(product.id);
     setForm(productToForm(product));
+    setSelectedPortion(
+      product.nameEn.endsWith(" Small")
+        ? "small"
+        : product.nameEn.endsWith(" Medium")
+          ? "medium"
+          : product.nameEn.endsWith(" Large")
+            ? "large"
+            : null,
+    );
     setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -246,15 +272,33 @@ function Admin() {
     }
   };
 
-  const addHummusAndFoulSizes = async () => {
-    try {
-      setError("");
-      await syncHummusAndFoulSizes();
-    } catch (syncError) {
-      setError(
-        syncError instanceof Error ? syncError.message : "Unable to add the Hummus and Foul sizes.",
-      );
-    }
+  const selectCategory = (categoryId: string) => {
+    updateField("categoryId", categoryId);
+    setSelectedPortion(null);
+  };
+
+  const selectPortion = (size: PortionSize) => {
+    const options = form.categoryId === "hummus" ? portionOptions.hummus : portionOptions.foul;
+    const portion = options.find((option) => option.id === size);
+    if (!portion) return;
+
+    const isHummus = form.categoryId === "hummus";
+    setForm((current) => ({
+      ...current,
+      nameAr: portion.nameAr,
+      nameEn: portion.nameEn,
+      descAr: isHummus
+        ? "حمص ناعم مع زيت زيتون أردني وطحينة."
+        : "فول مدمس على النار من الليل، ليمون وكمون وزيت زيتون.",
+      descEn: isHummus
+        ? "Silky, with Jordanian olive oil and washed tahini."
+        : "Slow-simmered fava beans, lemon, cumin, olive oil.",
+      price: String(portion.price),
+      image: isHummus ? images.hummusMeat : images.foul,
+      recipe: [],
+    }));
+    setSelectedPortion(size);
+    setError("");
   };
 
   return (
@@ -300,13 +344,6 @@ function Admin() {
               )}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void addHummusAndFoulSizes()}
-            className="min-h-11 border border-gold/35 px-4 text-sm text-gold hover:bg-gold hover:text-ink"
-          >
-            {L("إضافة أحجام الحمص والفول", "Add Hummus & Foul sizes")}
-          </button>
           <button
             type="button"
             onClick={startAdd}
@@ -429,7 +466,7 @@ function Admin() {
               <FormLabel label={L("التصنيف", "Category")}>
                 <select
                   value={form.categoryId}
-                  onChange={(event) => updateField("categoryId", event.target.value)}
+                  onChange={(event) => selectCategory(event.target.value)}
                   className="form-control"
                 >
                   {activeCategories.map((category) => (
@@ -439,6 +476,49 @@ function Admin() {
                   ))}
                 </select>
               </FormLabel>
+              {form.categoryId === "hummus" || form.categoryId === "foul" ? (
+                <div className="border border-gold/25 bg-ink/40 p-3">
+                  <p className="mb-2 text-xs font-medium text-gold">
+                    {L("اختر الحجم", "Choose size")}
+                  </p>
+                  <div
+                    className="grid grid-cols-3 gap-2"
+                    role="tablist"
+                    aria-label={L("الحجم", "Size")}
+                  >
+                    {(form.categoryId === "hummus"
+                      ? portionOptions.hummus
+                      : portionOptions.foul
+                    ).map((portion) => (
+                      <button
+                        key={portion.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedPortion === portion.id}
+                        onClick={() => selectPortion(portion.id)}
+                        className={`min-h-11 border px-2 text-sm transition-colors ${
+                          selectedPortion === portion.id
+                            ? "border-gold bg-gold text-ink"
+                            : "border-gold/25 text-bone hover:border-gold hover:text-gold"
+                        }`}
+                      >
+                        {L(
+                          portion.id === "small"
+                            ? "صغير"
+                            : portion.id === "medium"
+                              ? "وسط"
+                              : "كبير",
+                          portion.id === "small"
+                            ? "Small"
+                            : portion.id === "medium"
+                              ? "Medium"
+                              : "Large",
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
                 <FormLabel label={L("الاسم بالعربية", "Arabic name")}>
                   <input
