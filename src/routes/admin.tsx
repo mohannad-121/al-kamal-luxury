@@ -1,11 +1,12 @@
-import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, UtensilsCrossed, X } from "lucide-react";
 import { FoodImage } from "@/components/FoodImage";
+import { AdminAccess } from "@/components/AdminAccess";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
-import { ingredientDefinitions } from "@/data/inventory";
 import { useLang } from "@/hooks/use-lang";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useMenu } from "@/hooks/use-menu";
 import type { Product, RecipeIngredient } from "@/types";
 
@@ -64,17 +65,38 @@ function productToForm(product: Product): ProductForm {
 
 function Admin() {
   const { L } = useLang();
-  const { products, addProduct, updateProduct, deleteProduct } = useMenu();
+  const {
+    products,
+    ingredients,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    refresh,
+    seedStarterMenu,
+  } = useMenu();
+  const { session, isAdmin, loading: authLoading } = useAdminAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isAdmin) void refresh();
+  }, [isAdmin, refresh]);
 
   const isEditing = editingId !== null;
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
     [products],
   );
+
+  if (authLoading) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-ink text-gold">Loading admin…</main>
+    );
+  }
+
+  if (!session || !isAdmin) return <AdminAccess hasSession={Boolean(session)} isAdmin={isAdmin} />;
 
   if (pathname !== "/admin") return <Outlet />;
 
@@ -94,7 +116,7 @@ function Admin() {
   };
 
   const addRecipeIngredient = () => {
-    const firstIngredient = ingredientDefinitions[0];
+    const firstIngredient = ingredients[0];
     if (!firstIngredient) return;
     setForm((current) => ({
       ...current,
@@ -136,7 +158,7 @@ function Admin() {
     reader.readAsDataURL(file);
   };
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     const price = Number(form.price);
     const discount = form.discount ? Number(form.discount) : undefined;
     if (
@@ -148,7 +170,7 @@ function Admin() {
       !form.recipe.length ||
       form.recipe.some(
         (ingredient) =>
-          !ingredientDefinitions.some((definition) => definition.id === ingredient.ingredientId) ||
+          !ingredients.some((definition) => definition.id === ingredient.ingredientId) ||
           !Number.isFinite(ingredient.quantity) ||
           ingredient.quantity <= 0,
       )
@@ -187,19 +209,40 @@ function Admin() {
       ...(existing?.extras ? { extras: existing.extras } : {}),
     };
 
-    if (existing) updateProduct(product);
-    else addProduct(product);
-    startAdd();
+    try {
+      if (existing) await updateProduct(product);
+      else await addProduct(product);
+      startAdd();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to save this menu item.");
+    }
   };
 
-  const removeProduct = (product: Product) => {
+  const removeProduct = async (product: Product) => {
     if (
       window.confirm(
         L(`حذف ${product.nameAr} من المنيو؟`, `Delete ${product.nameEn} from the menu?`),
       )
     ) {
-      deleteProduct(product.id);
-      if (editingId === product.id) startAdd();
+      try {
+        await deleteProduct(product.id);
+        if (editingId === product.id) startAdd();
+      } catch (deleteError) {
+        setError(
+          deleteError instanceof Error ? deleteError.message : "Unable to delete this menu item.",
+        );
+      }
+    }
+  };
+
+  const importStarterMenu = async () => {
+    try {
+      setError("");
+      await seedStarterMenu();
+    } catch (seedError) {
+      setError(
+        seedError instanceof Error ? seedError.message : "Unable to import the starter menu.",
+      );
     }
   };
 
@@ -311,7 +354,7 @@ function Admin() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeProduct(product)}
+                          onClick={() => void removeProduct(product)}
                           className="grid h-11 w-11 place-items-center border border-red-300/25 text-red-200 hover:border-red-300"
                           aria-label={L(`حذف ${product.nameAr}`, `Delete ${product.nameEn}`)}
                         >
@@ -328,6 +371,14 @@ function Admin() {
                     "لا توجد أصناف بعد. أضف أول صنف من النموذج.",
                     "There are no items yet. Add your first item using the form.",
                   )}
+                  <button
+                    type="button"
+                    onClick={() => void importStarterMenu()}
+                    className="mx-auto mt-5 inline-flex min-h-11 items-center gap-2 border border-gold/35 px-4 text-sm text-gold hover:bg-gold hover:text-ink"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {L("استيراد المنيو الحالي", "Import current starter menu")}
+                  </button>
                 </div>
               ) : null}
             </div>
@@ -451,7 +502,7 @@ function Admin() {
                 </div>
                 <div className="mt-3 space-y-2">
                   {form.recipe.map((ingredient, index) => {
-                    const definition = ingredientDefinitions.find(
+                    const definition = ingredients.find(
                       (item) => item.id === ingredient.ingredientId,
                     );
                     return (
@@ -466,7 +517,7 @@ function Admin() {
                           }
                           className="form-control min-w-0"
                         >
-                          {ingredientDefinitions.map((item) => (
+                          {ingredients.map((item) => (
                             <option key={item.id} value={item.id}>
                               {L(item.nameAr, item.nameEn)}
                             </option>
@@ -558,7 +609,7 @@ function Admin() {
               ) : null}
               <button
                 type="button"
-                onClick={saveProduct}
+                onClick={() => void saveProduct()}
                 className="flex min-h-12 w-full items-center justify-center gap-2 bg-gold px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-gold-soft"
               >
                 <UtensilsCrossed className="h-4 w-4" />

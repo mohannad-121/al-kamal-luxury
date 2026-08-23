@@ -7,92 +7,336 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { defaultRecipes, ingredientDefinitions } from "@/data/inventory";
 import { hiddenProductIds, products as defaultProducts } from "@/data/menu";
-import { defaultRecipes } from "@/data/inventory";
-import type { Product } from "@/types";
+import { supabase } from "@/lib/supabase";
+import type { IngredientDefinition, Product } from "@/types";
+
+export type InventoryIngredient = IngredientDefinition & {
+  availableQuantity: number;
+  lowStockThreshold: number;
+};
 
 interface MenuContextValue {
   products: Product[];
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (id: string) => void;
+  ingredients: InventoryIngredient[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  seedStarterMenu: () => Promise<void>;
+  addProduct: (product: Product) => Promise<void>;
+  updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
 }
 
-const STORAGE_KEY = "alkamal.menu.v1";
-const MenuContext = createContext<MenuContextValue | null>(null);
-const initialProducts = defaultProducts
+type CategoryRow = { id: string; slug: string };
+type IngredientRow = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  unit: IngredientDefinition["unit"];
+  available_quantity: number;
+  low_stock_threshold: number;
+};
+type RecipeRow = { ingredient_id: string; quantity_per_item: number };
+type MenuRow = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  description_ar: string | null;
+  description_en: string | null;
+  price: number;
+  discount: number | null;
+  image_url: string;
+  is_available: boolean;
+  is_popular: boolean;
+  is_featured: boolean;
+  menu_categories: { slug: string } | { slug: string }[] | null;
+  menu_item_ingredients: RecipeRow[] | null;
+};
+
+const starterProducts = defaultProducts
   .filter((product) => !hiddenProductIds.has(product.id))
-  .map((product) => ({ ...product, recipe: product.recipe ?? defaultRecipes[product.id] ?? [] }));
+  .map((product) => ({ ...product, recipe: defaultRecipes[product.id] ?? [] }));
+
+const MenuContext = createContext<MenuContextValue | null>(null);
+
+function productFromRow(row: MenuRow): Product {
+  const category = Array.isArray(row.menu_categories)
+    ? row.menu_categories[0]
+    : row.menu_categories;
+  return {
+    id: row.id,
+    categoryId: category?.slug ?? "",
+    nameAr: row.name_ar,
+    nameEn: row.name_en,
+    descAr: row.description_ar ?? row.name_ar,
+    descEn: row.description_en ?? row.name_en,
+    price: Number(row.price),
+    discount: Number(row.discount ?? 0) || undefined,
+    image: row.image_url,
+    available: row.is_available,
+    popular: row.is_popular,
+    featured: row.is_featured,
+    recipe: (row.menu_item_ingredients ?? []).map((ingredient) => ({
+      ingredientId: ingredient.ingredient_id,
+      quantity: Number(ingredient.quantity_per_item),
+    })),
+  };
+}
 
 export function MenuProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [hydrated, setHydrated] = useState(false);
+  const [products, setProducts] = useState<Product[]>(starterProducts);
+  const [ingredients, setIngredients] = useState<InventoryIngredient[]>([]);
+  const [categoryRows, setCategoryRows] = useState<CategoryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as unknown;
-        if (Array.isArray(parsed)) {
-          setProducts(
-            (parsed as Product[]).map((product) => ({
-              ...product,
-              recipe: product.recipe ?? defaultRecipes[product.id] ?? [],
-            })),
-          );
-        }
-      }
-    } catch {
-      // Keep the built-in menu if saved data cannot be read.
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data: categoryData, error: categoryError } = await supabase
+      .from("menu_categories")
+      .select("id, slug")
+      .order("display_order");
+    if (categoryError) {
+      setError(categoryError.message);
+      setLoading(false);
+      return;
     }
-    setHydrated(true);
-  }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    } catch {
-      // The in-page menu still works if browser storage is unavailable or full.
+    const { data: menuData, error: menuError } = await supabase
+      .from("menu_items")
+      .select(
+        "id, name_ar, name_en, description_ar, description_en, price, discount, image_url, is_available, is_popular, is_featured, menu_categories!inner(slug), menu_item_ingredients(ingredient_id, quantity_per_item)",
+      )
+      .eq("is_archived", false)
+      .order("created_at");
+    if (menuError) {
+      setError(menuError.message);
+      setLoading(false);
+      return;
     }
-  }, [hydrated, products]);
+
+    const { data: ingredientData, error: ingredientError } = await supabase
+      .from("ingredients")
+      .select("id, name_ar, name_en, unit, available_quantity, low_stock_threshold")
+      .order("name_en");
+
+    setCategoryRows((categoryData ?? []) as CategoryRow[]);
+    setProducts(((menuData ?? []) as MenuRow[]).map(productFromRow));
+    if (!ingredientError) {
+      setIngredients(
+        ((ingredientData ?? []) as IngredientRow[]).map((ingredient) => ({
+          id: ingredient.id,
+          nameAr: ingredient.name_ar,
+          nameEn: ingredient.name_en,
+          unit: ingredient.unit,
+          initialQuantity: Number(ingredient.available_quantity),
+          availableQuantity: Number(ingredient.available_quantity),
+          lowStockThreshold: Number(ingredient.low_stock_threshold),
+        })),
+      );
+    } else {
+      setIngredients([]);
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    const syncMenu = (event: StorageEvent) => {
-      if (event.key !== STORAGE_KEY || !event.newValue) return;
-      try {
-        const parsed = JSON.parse(event.newValue) as unknown;
-        if (Array.isArray(parsed)) {
-          setProducts(
-            (parsed as Product[]).map((product) => ({
-              ...product,
-              recipe: product.recipe ?? defaultRecipes[product.id] ?? [],
-            })),
-          );
-        }
-      } catch {
-        // Ignore malformed data written by another browser context.
-      }
-    };
-    window.addEventListener("storage", syncMenu);
-    return () => window.removeEventListener("storage", syncMenu);
+    void refresh();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      void refresh();
+    });
+    return () => listener.subscription.unsubscribe();
+  }, [refresh]);
+
+  const saveRecipe = useCallback(async (menuItemId: string, product: Product) => {
+    const { error: deleteError } = await supabase
+      .from("menu_item_ingredients")
+      .delete()
+      .eq("menu_item_id", menuItemId);
+    if (deleteError) throw new Error(deleteError.message);
+
+    const recipe = product.recipe ?? [];
+    if (!recipe.length) return;
+    const { error: recipeError } = await supabase.from("menu_item_ingredients").insert(
+      recipe.map((ingredient) => ({
+        menu_item_id: menuItemId,
+        ingredient_id: ingredient.ingredientId,
+        quantity_per_item: ingredient.quantity,
+      })),
+    );
+    if (recipeError) throw new Error(recipeError.message);
   }, []);
 
-  const addProduct = useCallback((product: Product) => {
-    setProducts((current) => [...current, product]);
-  }, []);
+  const addProduct = useCallback(
+    async (product: Product) => {
+      const categoryId = categoryRows.find((category) => category.slug === product.categoryId)?.id;
+      if (!categoryId) throw new Error("Choose a valid category before saving.");
+      const { data, error: insertError } = await supabase
+        .from("menu_items")
+        .insert({
+          category_id: categoryId,
+          name_ar: product.nameAr,
+          name_en: product.nameEn,
+          description_ar: product.descAr,
+          description_en: product.descEn,
+          price: product.price,
+          discount: product.discount ?? 0,
+          image_url: product.image,
+          is_available: product.available,
+          is_popular: product.popular,
+          is_featured: Boolean(product.featured),
+        })
+        .select("id")
+        .single();
+      if (insertError || !data)
+        throw new Error(insertError?.message ?? "Unable to add the menu item.");
+      await saveRecipe(data.id, product);
+      await refresh();
+    },
+    [categoryRows, refresh, saveRecipe],
+  );
 
-  const updateProduct = useCallback((product: Product) => {
-    setProducts((current) => current.map((item) => (item.id === product.id ? product : item)));
-  }, []);
+  const updateProduct = useCallback(
+    async (product: Product) => {
+      const categoryId = categoryRows.find((category) => category.slug === product.categoryId)?.id;
+      if (!categoryId) throw new Error("Choose a valid category before saving.");
+      const { error: updateError } = await supabase
+        .from("menu_items")
+        .update({
+          category_id: categoryId,
+          name_ar: product.nameAr,
+          name_en: product.nameEn,
+          description_ar: product.descAr,
+          description_en: product.descEn,
+          price: product.price,
+          discount: product.discount ?? 0,
+          image_url: product.image,
+          is_available: product.available,
+          is_popular: product.popular,
+          is_featured: Boolean(product.featured),
+        })
+        .eq("id", product.id);
+      if (updateError) throw new Error(updateError.message);
+      await saveRecipe(product.id, product);
+      await refresh();
+    },
+    [categoryRows, refresh, saveRecipe],
+  );
 
-  const deleteProduct = useCallback((id: string) => {
-    setProducts((current) => current.filter((product) => product.id !== id));
-  }, []);
+  const deleteProduct = useCallback(
+    async (id: string) => {
+      const { error: deleteError } = await supabase
+        .from("menu_items")
+        .update({ is_archived: true, is_available: false })
+        .eq("id", id);
+      if (deleteError) throw new Error(deleteError.message);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const seedStarterMenu = useCallback(async () => {
+    const { count, error: countError } = await supabase
+      .from("menu_items")
+      .select("id", { count: "exact", head: true });
+    if (countError) throw new Error(countError.message);
+    if ((count ?? 0) > 0) {
+      await refresh();
+      return;
+    }
+
+    const { error: ingredientInsertError } = await supabase.from("ingredients").insert(
+      ingredientDefinitions.map((ingredient) => ({
+        name_ar: ingredient.nameAr,
+        name_en: ingredient.nameEn,
+        unit: ingredient.unit,
+        available_quantity: ingredient.initialQuantity,
+        low_stock_threshold: ingredient.lowStockThreshold,
+      })),
+    );
+    if (ingredientInsertError) throw new Error(ingredientInsertError.message);
+
+    const { data: freshCategories, error: freshCategoryError } = await supabase
+      .from("menu_categories")
+      .select("id, slug");
+    if (freshCategoryError) throw new Error(freshCategoryError.message);
+    const categoryMap = new Map(
+      (freshCategories ?? []).map((category) => [category.slug, category.id]),
+    );
+
+    const { data: insertedProducts, error: productInsertError } = await supabase
+      .from("menu_items")
+      .insert(
+        starterProducts.map((product) => ({
+          category_id: categoryMap.get(product.categoryId),
+          name_ar: product.nameAr,
+          name_en: product.nameEn,
+          description_ar: product.descAr,
+          description_en: product.descEn,
+          price: product.price,
+          discount: product.discount ?? 0,
+          image_url: product.image,
+          is_available: product.available,
+          is_popular: product.popular,
+          is_featured: Boolean(product.featured),
+        })),
+      )
+      .select("id, name_en");
+    if (productInsertError) throw new Error(productInsertError.message);
+
+    const { data: freshIngredients, error: freshIngredientError } = await supabase
+      .from("ingredients")
+      .select("id, name_en");
+    if (freshIngredientError) throw new Error(freshIngredientError.message);
+    const ingredientMap = new Map(
+      (freshIngredients ?? []).map((ingredient) => [
+        ingredientDefinitions.find((definition) => definition.nameEn === ingredient.name_en)?.id,
+        ingredient.id,
+      ]),
+    );
+    const productMap = new Map(
+      (insertedProducts ?? []).map((product) => [product.name_en, product.id]),
+    );
+    const recipes = starterProducts.flatMap((product) =>
+      (product.recipe ?? []).map((ingredient) => ({
+        menu_item_id: productMap.get(product.nameEn),
+        ingredient_id: ingredientMap.get(ingredient.ingredientId),
+        quantity_per_item: ingredient.quantity,
+      })),
+    );
+    const { error: recipeInsertError } = await supabase
+      .from("menu_item_ingredients")
+      .insert(recipes);
+    if (recipeInsertError) throw new Error(recipeInsertError.message);
+    await refresh();
+  }, [refresh]);
 
   const value = useMemo(
-    () => ({ products, addProduct, updateProduct, deleteProduct }),
-    [products, addProduct, updateProduct, deleteProduct],
+    () => ({
+      products,
+      ingredients,
+      loading,
+      error,
+      refresh,
+      seedStarterMenu,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+    }),
+    [
+      addProduct,
+      deleteProduct,
+      error,
+      ingredients,
+      loading,
+      products,
+      refresh,
+      seedStarterMenu,
+      updateProduct,
+    ],
   );
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;

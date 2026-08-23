@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -18,7 +18,6 @@ import {
 import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
-import { ingredientDefinitions } from "@/data/inventory";
 import { useDailySales } from "@/hooks/use-daily-sales";
 import { useLang } from "@/hooks/use-lang";
 import { useMenu } from "@/hooks/use-menu";
@@ -55,11 +54,17 @@ function DailySales() {
     undoSale,
     addStock,
     closeDay,
+    ingredients,
+    error: databaseError,
   } = useDailySales();
   const [categoryId, setCategoryId] = useState("all");
   const [search, setSearch] = useState("");
   const [stockMessage, setStockMessage] = useState("");
   const [isConfirmingClose, setIsConfirmingClose] = useState(false);
+
+  useEffect(() => {
+    if (databaseError) setStockMessage(databaseError);
+  }, [databaseError]);
 
   const activeCategories = categories.filter((category) => category.active);
   const query = search.trim().toLocaleLowerCase();
@@ -80,8 +85,8 @@ function DailySales() {
     : undefined;
   const mostUsedIngredient = Object.entries(ingredientUsage)
     .sort(([, first], [, second]) => second - first)
-    .map(([id]) => ingredientDefinitions.find((ingredient) => ingredient.id === id))[0];
-  const lowStock = ingredientDefinitions.filter(
+    .map(([id]) => ingredients.find((ingredient) => ingredient.id === id))[0];
+  const lowStock = ingredients.filter(
     (ingredient) => (inventory[ingredient.id] ?? 0) <= ingredient.lowStockThreshold,
   );
   const categoryStats = useMemo(
@@ -100,10 +105,10 @@ function DailySales() {
   );
   const largestCategoryRevenue = Math.max(1, ...categoryStats.map((stat) => stat.revenue));
 
-  const sell = (product: Product) => {
-    const result = recordSale(product);
+  const sell = async (product: Product) => {
+    const result = await recordSale(product);
     if (!result.ok) {
-      const ingredient = ingredientDefinitions.find((item) => item.id === result.ingredientId);
+      const ingredient = ingredients.find((item) => item.id === result.ingredientId);
       setStockMessage(
         L(
           `لا يمكن تسجيل البيع: مخزون ${ingredient?.nameAr ?? "هذا المكوّن"} غير كافٍ.`,
@@ -115,8 +120,8 @@ function DailySales() {
     setStockMessage("");
   };
 
-  const restock = (ingredientId: string) => {
-    const ingredient = ingredientDefinitions.find((item) => item.id === ingredientId);
+  const restock = async (ingredientId: string) => {
+    const ingredient = ingredients.find((item) => item.id === ingredientId);
     if (!ingredient) return;
     const answer = window.prompt(
       L(
@@ -130,7 +135,7 @@ function DailySales() {
       setStockMessage(L("أدخل كمية أكبر من صفر.", "Enter an amount greater than zero."));
       return;
     }
-    addStock(ingredientId, amount);
+    await addStock(ingredientId, amount);
     setStockMessage("");
   };
 
@@ -235,7 +240,7 @@ function DailySales() {
                 <button
                   key={ingredient.id}
                   type="button"
-                  onClick={() => restock(ingredient.id)}
+                  onClick={() => void restock(ingredient.id)}
                   className="border border-amber-200/25 px-2 py-1 text-xs text-amber-50 hover:border-amber-100"
                 >
                   {L(ingredient.nameAr, ingredient.nameEn)} —{" "}
@@ -329,7 +334,7 @@ function DailySales() {
                     <div className="mt-4 grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2">
                       <button
                         type="button"
-                        onClick={() => undoSale(product)}
+                        onClick={() => void undoSale(product)}
                         disabled={!quantity}
                         aria-label={L(`إزالة ${product.nameAr}`, `Remove ${product.nameEn}`)}
                         className="grid min-h-14 place-items-center border border-gold/25 text-gold transition-colors hover:border-gold disabled:cursor-not-allowed disabled:opacity-35"
@@ -338,7 +343,7 @@ function DailySales() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => sell(product)}
+                        onClick={() => void sell(product)}
                         disabled={!isReady}
                         className="inline-flex min-h-14 items-center justify-center gap-2 bg-gold px-4 text-base font-semibold text-ink transition-colors hover:bg-gold-soft disabled:cursor-not-allowed disabled:bg-gold/35"
                       >
@@ -366,7 +371,7 @@ function DailySales() {
               </h2>
             </div>
             <div className="divide-y divide-gold/10">
-              {ingredientDefinitions.map((ingredient) => {
+              {ingredients.map((ingredient) => {
                 const used = ingredientUsage[ingredient.id] ?? 0;
                 const remaining = inventory[ingredient.id] ?? 0;
                 const isLow = remaining <= ingredient.lowStockThreshold;
@@ -390,7 +395,7 @@ function DailySales() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => restock(ingredient.id)}
+                      onClick={() => void restock(ingredient.id)}
                       className="border border-gold/25 px-3 py-2 text-xs text-gold hover:border-gold"
                     >
                       {L("إضافة مخزون", "Add stock")}
@@ -516,8 +521,9 @@ function DailySales() {
               <button
                 type="button"
                 onClick={() => {
-                  closeDay();
-                  setIsConfirmingClose(false);
+                  void closeDay().then((report) => {
+                    if (report) setIsConfirmingClose(false);
+                  });
                 }}
                 className="min-h-11 bg-gold px-4 text-sm font-medium text-ink hover:bg-gold-soft"
               >
@@ -628,7 +634,7 @@ function ReportRow({ report }: { report: DailyReport }) {
           <div className="mt-3 space-y-2 text-sm">
             {Object.entries(report.ingredientUsage).length ? (
               Object.entries(report.ingredientUsage).map(([id, amount]) => {
-                const ingredient = ingredientDefinitions.find((item) => item.id === id);
+                const ingredient = ingredients.find((item) => item.id === id);
                 return ingredient ? (
                   <div key={id} className="flex justify-between gap-3 text-bone/75">
                     <span>{ingredient.nameEn}</span>
