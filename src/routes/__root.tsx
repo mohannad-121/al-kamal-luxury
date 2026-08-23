@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { LangProvider } from "@/hooks/use-lang";
+import { MenuProvider } from "@/hooks/use-menu";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 import appCss from "../styles.css?url";
@@ -129,8 +130,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
-        <Outlet />
-        <MobileBottomNav />
+        <MenuProvider>
+          <Outlet />
+          <MobileBottomNav />
+        </MenuProvider>
       </LangProvider>
     </QueryClientProvider>
   );

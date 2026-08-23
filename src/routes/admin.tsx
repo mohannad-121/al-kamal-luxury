@@ -1,75 +1,165 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Bike,
-  CheckCircle2,
-  ClipboardList,
-  Clock3,
-  CookingPot,
-  LayoutDashboard,
-  PackageCheck,
-  UtensilsCrossed,
-} from "lucide-react";
-import { GoldButton } from "@/components/GoldButton";
+import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, UtensilsCrossed, X } from "lucide-react";
+import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
+import { categories } from "@/data/categories";
 import { useLang } from "@/hooks/use-lang";
-import { getOrders } from "@/services";
-import type { Order, OrderStatus } from "@/types";
+import { useMenu } from "@/hooks/use-menu";
+import type { Product } from "@/types";
 
 export const Route = createFileRoute("/admin")({ component: Admin });
 
-const statuses: Record<OrderStatus, { ar: string; en: string }> = {
-  received: { ar: "طلب جديد", en: "New order" },
-  preparing: { ar: "قيد التحضير", en: "Preparing" },
-  ready: { ar: "جاهز", en: "Ready" },
-  on_the_way: { ar: "خرج للتوصيل", en: "On the way" },
-  delivered: { ar: "تم التوصيل", en: "Delivered" },
-  cancelled: { ar: "ملغي", en: "Cancelled" },
+type ProductForm = {
+  categoryId: string;
+  nameAr: string;
+  nameEn: string;
+  descAr: string;
+  descEn: string;
+  price: string;
+  discount: string;
+  image: string;
+  available: boolean;
+  popular: boolean;
+  featured: boolean;
 };
 
-const statusClasses: Record<OrderStatus, string> = {
-  received: "border-gold/50 bg-gold/10 text-gold",
-  preparing: "border-amber-400/40 bg-amber-400/10 text-amber-200",
-  ready: "border-sky-300/35 bg-sky-300/10 text-sky-200",
-  on_the_way: "border-violet-300/35 bg-violet-300/10 text-violet-200",
-  delivered: "border-emerald-300/35 bg-emerald-300/10 text-emerald-200",
-  cancelled: "border-red-300/35 bg-red-300/10 text-red-200",
-};
+const activeCategories = categories.filter((category) => category.active);
+
+function emptyForm(): ProductForm {
+  return {
+    categoryId: activeCategories[0]?.id ?? "",
+    nameAr: "",
+    nameEn: "",
+    descAr: "",
+    descEn: "",
+    price: "",
+    discount: "",
+    image: "",
+    available: true,
+    popular: false,
+    featured: false,
+  };
+}
+
+function productToForm(product: Product): ProductForm {
+  return {
+    categoryId: product.categoryId,
+    nameAr: product.nameAr,
+    nameEn: product.nameEn,
+    descAr: product.descAr,
+    descEn: product.descEn,
+    price: String(product.price),
+    discount: product.discount ? String(product.discount) : "",
+    image: product.image,
+    available: product.available,
+    popular: product.popular,
+    featured: Boolean(product.featured),
+  };
+}
 
 function Admin() {
   const { L } = useLang();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filter, setFilter] = useState<"all" | OrderStatus>("all");
+  const { products, addProduct, updateProduct, deleteProduct } = useMenu();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    void getOrders().then(setOrders);
-  }, []);
-
-  const visible = useMemo(
-    () => (filter === "all" ? orders : orders.filter((order) => order.status === filter)),
-    [filter, orders],
+  const isEditing = editingId !== null;
+  const sortedProducts = useMemo(
+    () => [...products].sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
+    [products],
   );
-  const sales = orders.reduce((sum, order) => sum + order.total, 0);
-  const preparing = orders.filter((order) => order.status === "preparing").length;
-  const delivery = orders.filter((order) => order.status === "on_the_way").length;
 
-  const updateStatus = (id: string, status: OrderStatus) => {
-    setOrders((current) =>
-      current.map((order) => (order.id === id ? { ...order, status } : order)),
-    );
+  const updateField = <K extends keyof ProductForm>(field: K, value: ProductForm[K]) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setError("");
   };
 
-  const stats = [
-    { label: L("طلبات اليوم", "Orders today"), value: orders.length, icon: ClipboardList },
-    {
-      label: L("مبيعات اليوم", "Today’s sales"),
-      value: <Price value={sales} />,
-      icon: PackageCheck,
-    },
-    { label: L("قيد التحضير", "Preparing"), value: preparing, icon: CookingPot },
-    { label: L("قيد التوصيل", "On delivery"), value: delivery, icon: Bike },
-  ];
+  const startAdd = () => {
+    setEditingId(null);
+    setForm(emptyForm());
+    setError("");
+  };
+
+  const startEdit = (product: Product) => {
+    setEditingId(product.id);
+    setForm(productToForm(product));
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleImageFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2_000_000) {
+      setError(L("حجم الصورة يجب أن يكون أقل من 2MB", "Image files must be smaller than 2 MB."));
+      event.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => updateField("image", String(reader.result ?? ""));
+    reader.readAsDataURL(file);
+  };
+
+  const saveProduct = () => {
+    const price = Number(form.price);
+    const discount = form.discount ? Number(form.discount) : undefined;
+    if (
+      !form.nameAr.trim() ||
+      !form.nameEn.trim() ||
+      !form.image.trim() ||
+      !Number.isFinite(price) ||
+      price < 0
+    ) {
+      setError(
+        L(
+          "أضف الاسم بالعربية والإنجليزية والصورة وسعراً صحيحاً قبل الحفظ.",
+          "Add Arabic and English names, an image, and a valid price before saving.",
+        ),
+      );
+      return;
+    }
+    if (
+      discount !== undefined &&
+      (!Number.isFinite(discount) || discount < 0 || discount >= price)
+    ) {
+      setError(L("الخصم يجب أن يكون أقل من السعر.", "The discount must be lower than the price."));
+      return;
+    }
+
+    const existing = products.find((product) => product.id === editingId);
+    const product: Product = {
+      id: existing?.id ?? `p-${Date.now()}`,
+      categoryId: form.categoryId,
+      nameAr: form.nameAr.trim(),
+      nameEn: form.nameEn.trim(),
+      descAr: form.descAr.trim() || form.nameAr.trim(),
+      descEn: form.descEn.trim() || form.nameEn.trim(),
+      price,
+      ...(discount ? { discount } : {}),
+      image: form.image.trim(),
+      available: form.available,
+      popular: form.popular,
+      featured: form.featured,
+      ...(existing?.extras ? { extras: existing.extras } : {}),
+    };
+
+    if (existing) updateProduct(product);
+    else addProduct(product);
+    startAdd();
+  };
+
+  const removeProduct = (product: Product) => {
+    if (
+      window.confirm(
+        L(`حذف ${product.nameAr} من المنيو؟`, `Delete ${product.nameEn} from the menu?`),
+      )
+    ) {
+      deleteProduct(product.id);
+      if (editingId === product.id) startAdd();
+    }
+  };
 
   return (
     <main className="min-h-screen bg-ink pb-10 text-bone">
@@ -81,9 +171,9 @@ function Admin() {
             </span>
             <span>
               <span className="block font-display text-lg">
-                {L("إدارة مطعم الكمال", "Al Kamal Admin")}
+                {L("إدارة المنيو", "Menu manager")}
               </span>
-              <span className="text-[.62rem] tracking-[.2em] text-gold">LOCAL DEMO</span>
+              <span className="text-[.62rem] tracking-[.2em] text-gold">AL KAMAL</span>
             </span>
           </div>
           <Link to="/" className="text-sm text-bone/70 hover:text-gold">
@@ -95,143 +185,295 @@ function Admin() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1440px] gap-5 px-4 pt-5 sm:gap-6 sm:px-8 sm:pt-7 lg:grid-cols-[220px_1fr]">
-        <aside className="h-fit border border-gold/15 bg-charcoal/40 p-2 sm:p-3 lg:sticky lg:top-6">
-          <p className="hidden px-3 py-2 text-[.65rem] tracking-[.2em] text-gold sm:block">
-            {L("لوحة التحكم", "NAVIGATION")}
-          </p>
-          <div className="no-scrollbar flex gap-1 overflow-x-auto sm:mt-1 sm:grid">
-            <button className="flex shrink-0 items-center gap-3 bg-gold px-3 py-3 text-sm text-ink">
-              <LayoutDashboard className="h-4 w-4" />
-              {L("نظرة عامة", "Overview")}
-            </button>
-            <button className="flex shrink-0 items-center gap-3 px-3 py-3 text-sm text-bone/65 hover:bg-ink/50">
-              <ClipboardList className="h-4 w-4" />
-              {L("الطلبات", "Orders")}
-            </button>
-            <button className="flex shrink-0 items-center gap-3 px-3 py-3 text-sm text-bone/65 hover:bg-ink/50">
-              <UtensilsCrossed className="h-4 w-4" />
-              {L("الأصناف", "Products")}
-            </button>
+      <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="eyebrow">{L("إدارة الأصناف", "MENU MANAGEMENT")}</p>
+            <h1 className="mt-2 text-3xl text-bone sm:text-4xl">
+              {L("أصناف المنيو", "Menu items")}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {L(
+                "أضف أو عدّل أو احذف أي صنف. التغييرات تظهر فوراً في المنيو.",
+                "Add, edit, or delete any item. Changes appear in the menu immediately.",
+              )}
+            </p>
           </div>
-          <p className="mt-5 hidden border-t border-gold/10 px-3 pt-4 text-xs leading-6 text-muted-foreground sm:block">
-            {L(
-              "هذه لوحة معاينة محلية. البيانات لا تصل لمطعم حقيقي.",
-              "This is a local preview. Data is not sent to a real restaurant.",
-            )}
-          </p>
-        </aside>
+          <button
+            type="button"
+            onClick={startAdd}
+            className="inline-flex min-h-11 items-center gap-2 bg-gold px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-gold-soft"
+          >
+            <Plus className="h-4 w-4" />
+            {L("إضافة صنف", "Add item")}
+          </button>
+        </div>
 
-        <section>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="eyebrow">{L("صباح الخير", "GOOD MORNING")}</p>
-              <h1 className="mt-2 text-3xl text-bone sm:text-4xl">
-                {L("ملخص اليوم", "Today’s overview")}
-              </h1>
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
+          <div className="order-2 xl:order-1">
+            <div className="border border-gold/20 bg-charcoal/35">
+              <div className="flex items-center justify-between border-b border-gold/15 p-5">
+                <div>
+                  <p className="eyebrow">{L("كل الأصناف", "ALL ITEMS")}</p>
+                  <h2 className="mt-1 text-2xl text-bone">{products.length}</h2>
+                </div>
+              </div>
+              <div className="divide-y divide-gold/10">
+                {sortedProducts.map((product) => {
+                  const category = categories.find((item) => item.id === product.categoryId);
+                  return (
+                    <article
+                      key={product.id}
+                      className="grid gap-4 p-4 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:p-5"
+                    >
+                      <FoodImage
+                        src={product.image}
+                        alt={L(product.nameAr, product.nameEn)}
+                        className="h-24 w-full sm:h-20 sm:w-20"
+                        zoom={false}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-xl text-bone">
+                            {L(product.nameAr, product.nameEn)}
+                          </h3>
+                          <span className="border border-gold/20 px-2 py-0.5 text-[0.65rem] text-gold">
+                            {category ? L(category.nameAr, category.nameEn) : product.categoryId}
+                          </span>
+                          {!product.available ? (
+                            <span className="text-[0.65rem] text-bone/50">
+                              {L("غير متوفر", "Unavailable")}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+                          {L(product.descAr, product.descEn)}
+                        </p>
+                        <p className="mt-2 text-gold">
+                          <Price value={product.price - (product.discount ?? 0)} />
+                        </p>
+                      </div>
+                      <div className="flex gap-2 sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(product)}
+                          className="grid h-11 w-11 place-items-center border border-gold/25 text-gold hover:border-gold"
+                          aria-label={L(`تعديل ${product.nameAr}`, `Edit ${product.nameEn}`)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(product)}
+                          className="grid h-11 w-11 place-items-center border border-red-300/25 text-red-200 hover:border-red-300"
+                          aria-label={L(`حذف ${product.nameAr}`, `Delete ${product.nameEn}`)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              {!products.length ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  {L(
+                    "لا توجد أصناف بعد. أضف أول صنف من النموذج.",
+                    "There are no items yet. Add your first item using the form.",
+                  )}
+                </div>
+              ) : null}
             </div>
-            <div className="flex items-center gap-2 border border-gold/20 bg-charcoal px-3 py-2 text-xs text-gold">
-              <Clock3 className="h-4 w-4" />
-              {L("آخر تحديث الآن", "Updated just now")}
-            </div>
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map(({ label, value, icon: Icon }) => (
-              <article key={label} className="border border-gold/15 bg-charcoal/45 p-4 sm:p-5">
-                <Icon className="h-5 w-5 text-gold" />
-                <p className="mt-4 text-sm text-muted-foreground">{label}</p>
-                <p className="mt-1 font-display text-3xl text-bone">{value}</p>
-              </article>
-            ))}
           </div>
 
-          <article className="mt-6 border border-gold/20 bg-charcoal/35">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gold/15 p-5">
+          <aside className="order-1 h-fit border border-gold/25 bg-charcoal/60 xl:sticky xl:top-6">
+            <div className="flex items-start justify-between border-b border-gold/15 p-5">
               <div>
-                <p className="eyebrow">{L("إدارة الطلبات", "ORDER MANAGEMENT")}</p>
-                <h2 className="mt-1 text-2xl text-bone">{L("آخر الطلبات", "Recent orders")}</h2>
+                <p className="eyebrow">
+                  {isEditing ? L("تعديل صنف", "EDIT ITEM") : L("صنف جديد", "NEW ITEM")}
+                </p>
+                <h2 className="mt-1 text-2xl text-bone">
+                  {isEditing
+                    ? L("تعديل المعلومات", "Edit details")
+                    : L("إضافة للمنيو", "Add to menu")}
+                </h2>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  ["all", "received", "preparing", "ready", "on_the_way", "delivered"] as const
-                ).map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFilter(status)}
-                    className={`border px-3 py-2 text-xs transition-colors ${filter === status ? "border-gold bg-gold text-ink" : "border-gold/20 text-bone/65 hover:border-gold/60"}`}
-                  >
-                    {status === "all"
-                      ? L("الكل", "All")
-                      : L(statuses[status].ar, statuses[status].en)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="divide-y divide-gold/10">
-              {visible.map((order) => (
-                <article
-                  key={order.id}
-                  className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[.75fr_1.1fr_.8fr_auto] lg:items-center"
+              {isEditing ? (
+                <button
+                  type="button"
+                  onClick={startAdd}
+                  className="grid h-10 w-10 place-items-center border border-gold/25 text-bone/70 hover:border-gold hover:text-gold"
+                  aria-label={L("إلغاء التعديل", "Cancel editing")}
                 >
-                  <div>
-                    <p className="font-display text-lg text-gold">{order.id}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {order.createdAt} ·{" "}
-                      {order.type === "delivery" ? L("توصيل", "Delivery") : L("استلام", "Pickup")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-bone">{order.customer}</p>
-                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                      {order.items.map((item) => `${item.qty}× ${item.nameAr}`).join(" · ")}
-                    </p>
-                  </div>
-                  <div>
-                    <span
-                      className={`inline-flex border px-2 py-1 text-xs ${statusClasses[order.status]}`}
-                    >
-                      {L(statuses[order.status].ar, statuses[order.status].en)}
-                    </span>
-                    <p className="mt-2 text-sm text-gold">
-                      <Price value={order.total} />
-                    </p>
-                  </div>
-                  <label className="flex items-center justify-between gap-2 border-t border-gold/10 pt-3 text-xs text-muted-foreground lg:justify-start lg:border-0 lg:pt-0">
-                    {L("الحالة", "Status")}
-                    <select
-                      value={order.status}
-                      onChange={(event) =>
-                        updateStatus(order.id, event.target.value as OrderStatus)
-                      }
-                      className="min-h-11 border border-gold/25 bg-ink px-3 py-2 text-base text-bone outline-none focus:border-gold sm:text-sm"
-                    >
-                      <option value="received">{L("طلب جديد", "New")}</option>
-                      <option value="preparing">{L("قيد التحضير", "Preparing")}</option>
-                      <option value="ready">{L("جاهز", "Ready")}</option>
-                      <option value="on_the_way">{L("خرج للتوصيل", "On the way")}</option>
-                      <option value="delivered">{L("تم التوصيل", "Delivered")}</option>
-                      <option value="cancelled">{L("ملغي", "Cancelled")}</option>
-                    </select>
-                  </label>
-                </article>
-              ))}
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
             </div>
-            {!visible.length && (
-              <div className="p-12 text-center text-muted-foreground">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-gold" />
-                {L("لا توجد طلبات بهذه الحالة", "No orders in this status")}
+            <div className="space-y-4 p-5">
+              <FormLabel label={L("التصنيف", "Category")}>
+                <select
+                  value={form.categoryId}
+                  onChange={(event) => updateField("categoryId", event.target.value)}
+                  className="form-control"
+                >
+                  {activeCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {L(category.nameAr, category.nameEn)}
+                    </option>
+                  ))}
+                </select>
+              </FormLabel>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                <FormLabel label={L("الاسم بالعربية", "Arabic name")}>
+                  <input
+                    value={form.nameAr}
+                    onChange={(event) => updateField("nameAr", event.target.value)}
+                    className="form-control"
+                    required
+                  />
+                </FormLabel>
+                <FormLabel label={L("الاسم بالإنجليزية", "English name")}>
+                  <input
+                    value={form.nameEn}
+                    onChange={(event) => updateField("nameEn", event.target.value)}
+                    className="form-control"
+                    required
+                  />
+                </FormLabel>
               </div>
-            )}
-          </article>
-          <div className="mt-6 border border-gold/15 bg-ink/50 p-5 text-sm leading-7 text-muted-foreground">
-            <strong className="text-gold">{L("ملاحظة:", "Note:")}</strong>{" "}
-            {L(
-              "تغيير الحالة يعمل في صفحة المعاينة الحالية فقط. لربط الطلبات الحقيقية، أضف قاعدة بيانات ومصادقة قبل النشر.",
-              "Status changes work only in this preview. Connect a database and authentication before publishing real orders.",
-            )}
-          </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                <FormLabel label={L("الوصف بالعربية", "Arabic description")}>
+                  <textarea
+                    value={form.descAr}
+                    onChange={(event) => updateField("descAr", event.target.value)}
+                    className="form-control min-h-20 resize-y"
+                  />
+                </FormLabel>
+                <FormLabel label={L("الوصف بالإنجليزية", "English description")}>
+                  <textarea
+                    value={form.descEn}
+                    onChange={(event) => updateField("descEn", event.target.value)}
+                    className="form-control min-h-20 resize-y"
+                  />
+                </FormLabel>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormLabel label={L("السعر", "Price")}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(event) => updateField("price", event.target.value)}
+                    className="form-control"
+                    required
+                  />
+                </FormLabel>
+                <FormLabel label={L("الخصم (اختياري)", "Discount (optional)")}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.discount}
+                    onChange={(event) => updateField("discount", event.target.value)}
+                    className="form-control"
+                  />
+                </FormLabel>
+              </div>
+              <FormLabel label={L("رابط الصورة", "Image URL")}>
+                <input
+                  type="url"
+                  value={form.image.startsWith("data:") ? "" : form.image}
+                  onChange={(event) => updateField("image", event.target.value)}
+                  placeholder="https://..."
+                  className="form-control"
+                />
+              </FormLabel>
+              <label className="flex cursor-pointer items-center gap-3 border border-dashed border-gold/30 px-4 py-3 text-sm text-bone/75 transition-colors hover:border-gold">
+                <ImagePlus className="h-5 w-5 text-gold" />
+                <span>{L("أو ارفع صورة من جهازك", "Or upload an image from your device")}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFile}
+                  className="sr-only"
+                />
+              </label>
+              {form.image ? (
+                <div className="overflow-hidden border border-gold/20">
+                  <FoodImage
+                    src={form.image}
+                    alt={L(form.nameAr || "معاينة", form.nameEn || "Preview")}
+                    className="aspect-[16/8] w-full"
+                    zoom={false}
+                  />
+                </div>
+              ) : null}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <Toggle
+                  label={L("متوفر", "Available")}
+                  checked={form.available}
+                  onChange={(value) => updateField("available", value)}
+                />
+                <Toggle
+                  label={L("الأكثر طلباً", "Popular")}
+                  checked={form.popular}
+                  onChange={(value) => updateField("popular", value)}
+                />
+                <Toggle
+                  label={L("مميز", "Featured")}
+                  checked={form.featured}
+                  onChange={(value) => updateField("featured", value)}
+                />
+              </div>
+              {error ? (
+                <p className="border border-red-300/30 bg-red-300/10 p-3 text-sm text-red-100">
+                  {error}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={saveProduct}
+                className="flex min-h-12 w-full items-center justify-center gap-2 bg-gold px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-gold-soft"
+              >
+                <UtensilsCrossed className="h-4 w-4" />
+                {isEditing ? L("حفظ التعديلات", "Save changes") : L("إضافة للمنيو", "Add to menu")}
+              </button>
+            </div>
+          </aside>
         </section>
       </div>
     </main>
+  );
+}
+
+function FormLabel({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block text-xs text-bone/75">
+      <span className="mb-2 block tracking-wide text-gold/90">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Toggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 border border-gold/15 px-2 py-2 text-bone/70">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="accent-[var(--gold)]"
+      />
+      <span>{label}</span>
+    </label>
   );
 }

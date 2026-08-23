@@ -7,18 +7,18 @@ import { ProductCard } from "@/components/ProductCard";
 import { FoodImage } from "@/components/FoodImage";
 import { GoldButton } from "@/components/GoldButton";
 import { SiteFooter } from "@/components/SiteFooter";
-import { hiddenProductIds, images, products } from "@/data/menu";
+import { images } from "@/data/menu";
 import { categories } from "@/data/categories";
 import { restaurant } from "@/config/restaurant";
 import { useLang } from "@/hooks/use-lang";
+import { useMenu } from "@/hooks/use-menu";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
   const { L } = useLang();
-  const featured = products
-    .filter((product) => product.featured && !hiddenProductIds.has(product.id))
-    .slice(0, 4);
+  const { products } = useMenu();
+  const featured = products.filter((product) => product.featured).slice(0, 4);
   return (
     <main>
       <Navbar />

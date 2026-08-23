@@ -5,8 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
 import { categories } from "@/data/categories";
-import { hiddenProductIds, products } from "@/data/menu";
 import { useLang } from "@/hooks/use-lang";
+import { useMenu } from "@/hooks/use-menu";
 
 export const Route = createFileRoute("/menu")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -17,13 +17,13 @@ export const Route = createFileRoute("/menu")({
 
 function Menu() {
   const { L } = useLang();
+  const { products } = useMenu();
   const { category: initialCategory } = Route.useSearch();
   const [active, setActive] = useState(initialCategory);
   const [term, setTerm] = useState("");
   const visible = useMemo(() => {
     const query = term.trim().toLocaleLowerCase();
     return products.filter((product) => {
-      if (hiddenProductIds.has(product.id)) return false;
       const categoryMatch = active === "all" || product.categoryId === active;
       const termMatch =
         !query ||
@@ -32,7 +32,7 @@ function Menu() {
           .includes(query);
       return categoryMatch && termMatch;
     });
-  }, [active, term]);
+  }, [active, products, term]);
   return (
     <main>
       <Navbar />
