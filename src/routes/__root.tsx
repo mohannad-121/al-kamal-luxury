@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { LangProvider, useLang } from "@/hooks/use-lang";
 import { MenuProvider } from "@/hooks/use-menu";
 import { DailySalesProvider } from "@/hooks/use-daily-sales";
@@ -15,7 +15,6 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import kamalLogo from "../../logo/kamal.jpg";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   const { L } = useLang();
@@ -49,10 +48,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   const { L } = useLang();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
