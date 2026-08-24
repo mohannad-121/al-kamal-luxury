@@ -67,8 +67,10 @@ export const createOrder = async (input: CreateOrderInput): Promise<Order> => {
     address: [input.street, input.building, input.floor, input.details].filter(Boolean).join("، "),
     items: input.lines.map((line) => ({
       nameAr: line.nameAr,
+      nameEn: line.nameEn,
       qty: line.qty,
       extrasAr: line.extras.map((extra) => extra.nameAr),
+      extrasEn: line.extras.map((extra) => extra.nameEn),
       ...(line.note ? { note: line.note } : {}),
       price: line.unitPrice,
     })),

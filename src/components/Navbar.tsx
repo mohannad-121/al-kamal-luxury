@@ -48,13 +48,15 @@ export function Navbar() {
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 pt-[env(safe-area-inset-top)] sm:h-[76px] sm:px-8 sm:pt-0">
           <Link to="/" className="group flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center border border-gold/50 text-gold transition-colors duration-500 group-hover:bg-gold group-hover:text-ink">
-              <span className="font-display text-sm">ك</span>
+              <span className="font-display text-sm">{L("ك", "K")}</span>
             </span>
             <span className="leading-tight">
               <span className="block font-display text-[0.95rem] text-bone">
                 {L(restaurant.nameAr, restaurant.nameEn)}
               </span>
-              <span className="block text-[0.6rem] tracking-[0.22em] text-gold/80">AL KAMAL</span>
+              <span className="block text-[0.6rem] tracking-[0.22em] text-gold/80">
+                {L("الكمال", "AL KAMAL")}
+              </span>
             </span>
           </Link>
 
@@ -82,7 +84,7 @@ export function Navbar() {
             <button
               onClick={toggle}
               className="flex h-10 w-10 items-center justify-center px-2 text-[0.72rem] tracking-widest text-bone/70 transition-colors hover:text-gold sm:w-auto sm:gap-1.5 sm:justify-start sm:flex"
-              aria-label="switch language"
+              aria-label={L("تغيير اللغة", "Change language")}
             >
               <Globe className="h-4 w-4" />
               <span className="hidden sm:inline">{lang === "ar" ? "EN" : "AR"}</span>

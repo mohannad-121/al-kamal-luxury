@@ -59,7 +59,7 @@ export function ProductSheet({ product, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center">
       <button
-        aria-label="close"
+        aria-label={L("إغلاق", "Close")}
         onClick={onClose}
         className="absolute inset-0 bg-ink/85 backdrop-blur-md animate-in fade-in duration-500"
       />
@@ -87,7 +87,7 @@ export function ProductSheet({ product, onClose }: Props) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 pb-5 sm:p-8">
-          <span className="eyebrow">{product.nameEn}</span>
+          <span className="eyebrow">{L(product.nameAr, product.nameEn)}</span>
           <h3 className="mt-2 text-2xl text-bone sm:text-3xl">
             {L(product.nameAr, product.nameEn)}
           </h3>

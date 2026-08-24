@@ -23,7 +23,7 @@ export function CartDrawer() {
   return (
     <div className="fixed inset-0 z-[95]">
       <button
-        aria-label="close cart"
+        aria-label={L("إغلاق السلة", "Close cart")}
         onClick={() => cart.setOpen(false)}
         className="absolute inset-0 bg-ink/85 backdrop-blur-md animate-in fade-in duration-400"
       />
@@ -102,7 +102,7 @@ export function CartDrawer() {
                           <button
                             onClick={() => cart.setQty(line.lineId, line.qty - 1)}
                             className="grid h-8 w-8 place-items-center text-bone transition-colors hover:text-gold"
-                            aria-label="-"
+                            aria-label={L("تقليل الكمية", "Decrease quantity")}
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
@@ -112,7 +112,7 @@ export function CartDrawer() {
                           <button
                             onClick={() => cart.setQty(line.lineId, line.qty + 1)}
                             className="grid h-8 w-8 place-items-center text-bone transition-colors hover:text-gold"
-                            aria-label="+"
+                            aria-label={L("زيادة الكمية", "Increase quantity")}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>

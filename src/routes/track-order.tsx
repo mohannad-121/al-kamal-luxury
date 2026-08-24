@@ -137,7 +137,7 @@ function TrackOrder() {
                     className="mt-3 flex justify-between text-sm"
                   >
                     <span className="text-bone/80">
-                      {item.qty}× {item.nameAr}
+                      {item.qty}× {L(item.nameAr, item.nameEn ?? item.nameAr)}
                     </span>
                     <span className="text-gold">
                       <Price value={item.price * item.qty} />

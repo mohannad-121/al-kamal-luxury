@@ -109,7 +109,9 @@ function Admin() {
 
   if (authLoading) {
     return (
-      <main className="grid min-h-screen place-items-center bg-ink text-gold">Loading admin…</main>
+      <main className="grid min-h-screen place-items-center bg-ink text-gold">
+        {L("جارٍ تحميل الإدارة…", "Loading admin…")}
+      </main>
     );
   }
 
@@ -313,7 +315,9 @@ function Admin() {
               <span className="block font-display text-lg">
                 {L("إدارة المنيو", "Menu manager")}
               </span>
-              <span className="text-[.62rem] tracking-[.2em] text-gold">AL KAMAL</span>
+              <span className="text-[.62rem] tracking-[.2em] text-gold">
+                {L("الكمال", "AL KAMAL")}
+              </span>
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm">

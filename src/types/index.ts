@@ -99,8 +99,10 @@ export type OrderStatus =
 
 export interface OrderItem {
   nameAr: string;
+  nameEn?: string;
   qty: number;
   extrasAr?: string[];
+  extrasEn?: string[];
   note?: string;
   price: number;
 }

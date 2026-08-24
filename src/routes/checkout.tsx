@@ -144,7 +144,7 @@ function Checkout() {
                             .map((candidate) => (
                               <option value={candidate.id} key={candidate.id}>
                                 {L(candidate.nameAr, candidate.nameEn)} · {candidate.fee.toFixed(2)}{" "}
-                                JOD
+                                {L("د.أ", "JOD")}
                               </option>
                             ))}
                         </select>

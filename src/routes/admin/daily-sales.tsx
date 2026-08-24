@@ -21,24 +21,41 @@ import { categories } from "@/data/categories";
 import { useDailySales } from "@/hooks/use-daily-sales";
 import { useLang } from "@/hooks/use-lang";
 import { useMenu } from "@/hooks/use-menu";
-import type { DailyReport, IngredientUnit, Product } from "@/types";
+import type { DailyReport, IngredientUnit, Lang, Product } from "@/types";
 
 export const Route = createFileRoute("/admin/daily-sales")({ component: DailySales });
 
-function formatAmount(value: number, unit: IngredientUnit) {
-  if (unit === "g" && value >= 1000) return `${(value / 1000).toFixed(value % 1000 ? 1 : 0)} kg`;
-  if (unit === "ml" && value >= 1000) return `${(value / 1000).toFixed(value % 1000 ? 1 : 0)} L`;
-  return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit === "piece" ? "pieces" : unit}`;
+function formatAmount(value: number, unit: IngredientUnit, lang: Lang) {
+  const number = new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-US", {
+    maximumFractionDigits: 1,
+  }).format(value);
+  const units =
+    lang === "ar"
+      ? { g: "غ", ml: "مل", piece: "قطعة", kg: "كغ", l: "لتر" }
+      : { g: "g", ml: "ml", piece: "pieces", kg: "kg", l: "L" };
+
+  if (unit === "g" && value >= 1000) {
+    return `${new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-US", {
+      maximumFractionDigits: 1,
+    }).format(value / 1000)} ${units.kg}`;
+  }
+  if (unit === "ml" && value >= 1000) {
+    return `${new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-US", {
+      maximumFractionDigits: 1,
+    }).format(value / 1000)} ${units.l}`;
+  }
+  return `${number} ${units[unit]}`;
 }
 
-function todayLabel(date: string) {
-  return new Intl.DateTimeFormat("en", { dateStyle: "full", timeZone: "Asia/Amman" }).format(
-    new Date(`${date}T12:00:00`),
-  );
+function todayLabel(date: string, lang: Lang) {
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-JO" : "en-US", {
+    dateStyle: "full",
+    timeZone: "Asia/Amman",
+  }).format(new Date(`${date}T12:00:00`));
 }
 
 function DailySales() {
-  const { L } = useLang();
+  const { L, lang } = useLang();
   const { products } = useMenu();
   const {
     activeDate,
@@ -151,7 +168,9 @@ function DailySales() {
               <span className="block font-display text-lg">
                 {L("الأداء اليومي", "Daily performance")}
               </span>
-              <span className="text-[.62rem] tracking-[.2em] text-gold">AL KAMAL</span>
+              <span className="text-[.62rem] tracking-[.2em] text-gold">
+                {L("الكمال", "AL KAMAL")}
+              </span>
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -173,7 +192,7 @@ function DailySales() {
             <h1 className="mt-2 text-3xl text-bone sm:text-4xl">
               {L("الأداء اليومي", "Daily performance")}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">{todayLabel(activeDate)}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{todayLabel(activeDate, lang)}</p>
           </div>
           <button
             type="button"
@@ -244,7 +263,7 @@ function DailySales() {
                   className="border border-amber-200/25 px-2 py-1 text-xs text-amber-50 hover:border-amber-100"
                 >
                   {L(ingredient.nameAr, ingredient.nameEn)} —{" "}
-                  {formatAmount(inventory[ingredient.id] ?? 0, ingredient.unit)}
+                  {formatAmount(inventory[ingredient.id] ?? 0, ingredient.unit, lang)}
                 </button>
               ))}
             </div>
@@ -386,10 +405,12 @@ function DailySales() {
                       </p>
                       <p className="mt-1 text-xs text-bone/50">
                         {L("اُستخدم", "Used")}:{" "}
-                        <span className="text-gold">{formatAmount(used, ingredient.unit)}</span> ·{" "}
-                        {L("المتبقي", "Remaining")}:{" "}
+                        <span className="text-gold">
+                          {formatAmount(used, ingredient.unit, lang)}
+                        </span>{" "}
+                        · {L("المتبقي", "Remaining")}:{" "}
                         <span className={isLow ? "text-amber-200" : "text-bone/75"}>
-                          {formatAmount(remaining, ingredient.unit)}
+                          {formatAmount(remaining, ingredient.unit, lang)}
                         </span>
                       </p>
                     </div>
@@ -595,13 +616,22 @@ function StatRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function ReportRow({ report }: { report: DailyReport }) {
+  const { L, lang } = useLang();
+
   return (
     <details className="group">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
         <div>
-          <p className="font-medium text-bone">{todayLabel(report.date)}</p>
+          <p className="font-medium text-bone">{todayLabel(report.date, lang)}</p>
           <p className="mt-1 text-xs text-bone/50">
-            {report.totalItemsSold} items · {report.bestSellingProduct ?? "No sales"}
+            {report.totalItemsSold} {L("قطعة", "items")} ·{" "}
+            {report.bestSellingProduct
+              ? L(
+                  report.itemSales.find((item) => item.nameEn === report.bestSellingProduct)
+                    ?.nameAr ?? report.bestSellingProduct,
+                  report.bestSellingProduct,
+                )
+              : L("لا توجد مبيعات", "No sales")}
           </p>
         </div>
         <div className="flex items-center gap-3 text-gold">
@@ -611,13 +641,13 @@ function ReportRow({ report }: { report: DailyReport }) {
       </summary>
       <div className="grid gap-5 border-t border-gold/10 p-5 md:grid-cols-2">
         <div>
-          <p className="text-xs tracking-[.12em] text-gold">ITEM SALES</p>
+          <p className="text-xs tracking-[.12em] text-gold">{L("مبيعات الأصناف", "ITEM SALES")}</p>
           <div className="mt-3 space-y-2 text-sm">
             {report.itemSales.length ? (
               report.itemSales.map((item) => (
                 <div key={item.productId} className="flex justify-between gap-3 text-bone/75">
                   <span>
-                    {item.nameEn} × {item.quantity}
+                    {L(item.nameAr, item.nameEn)} × {item.quantity}
                   </span>
                   <span>
                     <Price value={item.revenue} />
@@ -625,25 +655,31 @@ function ReportRow({ report }: { report: DailyReport }) {
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground">No sales were recorded.</p>
+              <p className="text-muted-foreground">
+                {L("لم تُسجَّل أي مبيعات.", "No sales were recorded.")}
+              </p>
             )}
           </div>
         </div>
         <div>
-          <p className="text-xs tracking-[.12em] text-gold">INGREDIENT USAGE</p>
+          <p className="text-xs tracking-[.12em] text-gold">
+            {L("استخدام المكونات", "INGREDIENT USAGE")}
+          </p>
           <div className="mt-3 space-y-2 text-sm">
             {Object.entries(report.ingredientUsage).length ? (
               Object.entries(report.ingredientUsage).map(([id, amount]) => {
                 const ingredient = ingredients.find((item) => item.id === id);
                 return ingredient ? (
                   <div key={id} className="flex justify-between gap-3 text-bone/75">
-                    <span>{ingredient.nameEn}</span>
-                    <span>{formatAmount(amount, ingredient.unit)}</span>
+                    <span>{L(ingredient.nameAr, ingredient.nameEn)}</span>
+                    <span>{formatAmount(amount, ingredient.unit, lang)}</span>
                   </div>
                 ) : null;
               })
             ) : (
-              <p className="text-muted-foreground">No ingredients were used.</p>
+              <p className="text-muted-foreground">
+                {L("لم تُستخدم أي مكونات.", "No ingredients were used.")}
+              </p>
             )}
           </div>
         </div>
