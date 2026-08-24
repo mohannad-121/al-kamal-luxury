@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ChevronLeft, MapPin, Sparkles, Star } from "lucide-react";
+import { ChevronLeft, MapPin, Quote, Sparkles, Star } from "lucide-react";
 import heroVideo from "../../videos/Create_a_high_end_cinematic_u.mp4";
 import storefront from "@/assets/storefront.jpg.asset.json";
 import chef from "@/assets/chef.jpg.asset.json";
@@ -13,12 +13,14 @@ import { categories } from "@/data/categories";
 import { restaurant } from "@/config/restaurant";
 import { useLang } from "@/hooks/use-lang";
 import { useMenu } from "@/hooks/use-menu";
+import { useReviews } from "@/hooks/use-reviews";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 function Index() {
-  const { L } = useLang();
+  const { L, lang } = useLang();
   const { products } = useMenu();
+  const { reviews, loading: reviewsLoading } = useReviews();
   const featured = products.filter((product) => product.featured).slice(0, 4);
   return (
     <main>
@@ -214,6 +216,65 @@ function Index() {
           </div>
         </section>
       ) : null}
+
+      <section id="reviews" className="bg-ink px-5 py-12 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-[1280px]">
+          <div className="max-w-2xl">
+            <p className="eyebrow">{L("آراء ضيوفنا", "GUEST REVIEWS")}</p>
+            <h2 className="mt-3 text-3xl text-bone sm:text-5xl">
+              {L("كلامكم هو سرّ الكمال.", "Your words mean everything.")}
+            </h2>
+            <p className="mt-4 leading-7 text-muted-foreground">
+              {L(
+                "نشارك فقط آراء الزبائن التي تمّت مراجعتها واعتمادها.",
+                "Only reviewed and approved customer feedback is shared here.",
+              )}
+            </p>
+          </div>
+
+          {reviewsLoading ? (
+            <div className="mt-9 grid gap-4 md:grid-cols-3">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="h-56 animate-pulse border border-gold/15 bg-charcoal/60"
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {reviews.map((review) => {
+                const text = lang === "ar" ? review.textAr ?? review.textEn : review.textEn ?? review.textAr;
+                const city = lang === "ar" ? review.cityAr ?? review.cityEn : review.cityEn ?? review.cityAr;
+                return (
+                  <article key={review.id} className="border border-gold/20 bg-charcoal/60 p-6 sm:p-7">
+                    <Quote className="h-6 w-6 text-gold" aria-hidden="true" />
+                    <div className="mt-5 flex text-gold" aria-label={`${review.rating} out of 5 stars`}>
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <Star
+                          key={index}
+                          className="h-4 w-4"
+                          fill={index < review.rating ? "currentColor" : "none"}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-4 min-h-16 leading-8 text-bone">{text}</p>
+                    <p className="mt-6 border-t border-gold/15 pt-4 font-display text-lg text-gold">
+                      {review.name}
+                      {city ? <span className="font-sans text-sm text-muted-foreground"> · {city}</span> : null}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-9 border border-gold/20 bg-charcoal/50 p-7 text-center text-muted-foreground">
+              {L("ستظهر آراء زبائننا هنا قريباً.", "Customer reviews will appear here soon.")}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section id="location" className="bg-charcoal px-5 py-12 sm:px-8 sm:py-20">
         <div className="mx-auto max-w-[1280px] border border-gold/20 bg-ink/40 p-7 sm:p-12">
