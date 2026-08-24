@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronLeft, MapPin, Sparkles, Star } from "lucide-react";
+import heroVideo from "../../videos/Create_a_high_end_cinematic_u.mp4";
 import storefront from "@/assets/storefront.jpg.asset.json";
 import chef from "@/assets/chef.jpg.asset.json";
 import { Navbar } from "@/components/Navbar";
@@ -31,6 +32,18 @@ function Index() {
           className="absolute inset-0 h-full w-full"
           imgClassName="animate-ken object-[58%_center]"
         />
+        <video
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={storefront.url}
+          aria-hidden="true"
+        >
+          <source src={heroVideo} type="video/mp4" />
+        </video>
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,9,.93)_0%,rgba(9,9,9,.62)_44%,rgba(9,9,9,.22)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 veil" />
         <div className="relative mx-auto flex min-h-[620px] max-w-[1400px] items-end px-5 pb-16 pt-24 sm:min-h-screen sm:px-8 sm:pb-28 sm:pt-32">
