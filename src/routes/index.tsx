@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import { ProductCard } from "@/components/ProductCard";
 import { FoodImage } from "@/components/FoodImage";
 import { GoldButton } from "@/components/GoldButton";
+import { ReviewSubmissionForm } from "@/components/ReviewSubmissionForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { images } from "@/data/menu";
 import { categories } from "@/data/categories";
@@ -273,6 +274,7 @@ function Index() {
               {L("ستظهر آراء زبائننا هنا قريباً.", "Customer reviews will appear here soon.")}
             </div>
           )}
+          <ReviewSubmissionForm />
         </div>
       </section>
 
