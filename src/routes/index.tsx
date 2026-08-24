@@ -225,13 +225,19 @@ function Index() {
             <h2 className="mt-3 text-3xl text-bone sm:text-5xl">
               {L("كلامكم هو سرّ الكمال.", "Your words mean everything.")}
             </h2>
-            <p className="mt-4 leading-7 text-muted-foreground">
+            <p className="mt-4 hidden leading-7 text-muted-foreground">
               {L(
                 "نشارك فقط آراء الزبائن التي تمّت مراجعتها واعتمادها.",
                 "Only reviewed and approved customer feedback is shared here.",
               )}
             </p>
           </div>
+          <p className="mt-4 leading-7 text-muted-foreground">
+            {L(
+              "نشارك آراء زبائننا وتجاربهم معنا.",
+              "We share our customers’ feedback and experiences with us.",
+            )}
+          </p>
 
           {reviewsLoading ? (
             <div className="mt-9 grid gap-4 md:grid-cols-3">
