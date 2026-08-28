@@ -81,7 +81,7 @@ function Checkout() {
               </h1>
               {!cart.lines.length ? (
                 <div className="mt-8 border border-gold/15 bg-charcoal/40 p-8 text-center">
-                  <p className="text-bone">{L("سلتك فاضية حالياً.", "Your cart is empty.")}</p>
+                  <p className="text-bone">{L("سلتك فاضية.", "Your cart is empty.")}</p>
                   <Link to="/menu">
                     <GoldButton className="mt-5">{L("تصفح المنيو", "Browse menu")}</GoldButton>
                   </Link>
@@ -111,7 +111,7 @@ function Checkout() {
                     </label>
                   </div>
                   <div className="mt-7">
-                    <p className="text-sm text-bone">{L("طريقة الاستلام", "Fulfillment")}</p>
+                    <p className="text-sm text-bone">{L("طريقة الاستلام", "Delivery or pickup")}</p>
                     <div className="mt-3 grid grid-cols-2 gap-3">
                       {(["delivery", "pickup"] as const).map((value) => (
                         <button
@@ -237,8 +237,8 @@ function Checkout() {
               </dl>
               <p className="mt-5 text-xs leading-6 text-muted-foreground">
                 {L(
-                  "الدفع نقداً عند الاستلام. ستظهر لك تفاصيل التتبع فور تأكيد طلبك.",
-                  "Cash payment on fulfillment. Your tracking details appear immediately after confirmation.",
+                  "الدفع كاش عند الاستلام، ورقم التتبع بيطلع بعد تأكيد الطلب.",
+                  "Pay cash on delivery or pickup. Tracking appears after confirmation.",
                 )}
               </p>
             </aside>

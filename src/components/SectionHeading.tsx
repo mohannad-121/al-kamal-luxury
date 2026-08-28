@@ -19,20 +19,9 @@ export function SectionHeading({
   className,
 }: Props) {
   return (
-    <Reveal
-      className={cn(
-        "max-w-2xl",
-        align === "center" && "mx-auto text-center",
-        className,
-      )}
-    >
+    <Reveal className={cn("max-w-2xl", align === "center" && "mx-auto text-center", className)}>
       {eyebrow ? (
-        <div
-          className={cn(
-            "flex items-center gap-3",
-            align === "center" && "justify-center",
-          )}
-        >
+        <div className={cn("flex items-center gap-3", align === "center" && "justify-center")}>
           <span className="h-px w-8 bg-gold/70" />
           <span className="eyebrow">{eyebrow}</span>
         </div>
@@ -40,6 +29,7 @@ export function SectionHeading({
       <h2
         className={cn(
           "mt-4 text-3xl leading-[1.25] sm:text-4xl md:text-5xl",
+          !eyebrow && "mt-0",
           tone === "light" ? "text-ink" : "text-bone",
         )}
       >

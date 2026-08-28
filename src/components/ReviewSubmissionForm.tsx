@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { LoaderCircle, Star } from "lucide-react";
+import { GoldButton } from "@/components/GoldButton";
 import { supabase } from "@/lib/supabase";
 import { useLang } from "@/hooks/use-lang";
 
@@ -22,13 +23,23 @@ export function ReviewSubmissionForm() {
     setIsSuccess(false);
 
     if (name.trim().length < 2 || name.trim().length > 80 || !rating || comment.trim().length < 8) {
-      setMessage(L("Ø£ÙƒÙ…Ù„ Ø§Ù„Ø§Ø³Ù… ÙˆØ§Ù„ØªÙ‚ÙŠÙŠÙ… ÙˆØ§Ù„ØªØ¹Ù„ÙŠÙ‚ Ù‚Ø¨Ù„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„.", "Add your name, rating, and comment before submitting."));
+      setMessage(
+        L(
+          "اكتب اسمك، اختار تقييم، واحكيلنا عن تجربتك.",
+          "Enter your name, choose a rating, and tell us about your experience.",
+        ),
+      );
       return;
     }
 
     const lastSubmission = Number(localStorage.getItem(REVIEW_COOLDOWN_KEY) ?? 0);
     if (Date.now() - lastSubmission < REVIEW_COOLDOWN_MS) {
-      setMessage(L("Ø´ÙƒØ±Ù‹Ø§! ÙŠÙ…ÙƒÙ†Ùƒ Ø¥Ø±Ø³Ø§Ù„ Ù…Ø±Ø§Ø¬Ø¹Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¹Ø¯ Ù‚Ù„ÙŠÙ„.", "Thanks! You can submit another review in a few minutes."));
+      setMessage(
+        L(
+          "استنى كم دقيقة قبل ما تبعث مراجعة ثانية.",
+          "Please wait a few minutes before posting again.",
+        ),
+      );
       return;
     }
 
@@ -43,7 +54,9 @@ export function ReviewSubmissionForm() {
     setSubmitting(false);
 
     if (error) {
-      setMessage(L("ØªØ¹Ø°Ø± Ø¥Ø±Ø³Ø§Ù„ Ù…Ø±Ø§Ø¬Ø¹ØªÙƒ Ø§Ù„Ø¢Ù†. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ù„Ø§Ø­Ù‚Ù‹Ø§.", "We could not send your review right now. Please try again."));
+      setMessage(
+        L("ما قدرنا نرسل مراجعتك. جرّب مرة ثانية.", "We couldn't post your review. Try again."),
+      );
       return;
     }
 
@@ -53,98 +66,116 @@ export function ReviewSubmissionForm() {
     setComment("");
     setWebsite("");
     setIsSuccess(true);
-    setMessage(L("Ø´ÙƒØ±Ù‹Ø§ Ù„Ù…Ø±Ø§Ø¬Ø¹ØªÙƒ! ØªÙ… Ù†Ø´Ø±Ù‡Ø§ Ø§Ù„Ø¢Ù†.", "Thank you! Your review has been published."));
+    setMessage(L("شكرًا! مراجعتك صارت على الموقع.", "Thanks! Your review is live."));
   };
 
   return (
-    <form onSubmit={submit} className="mt-8 border border-gold/20 bg-charcoal/60 p-6 sm:p-8">
-      <p className="eyebrow">{L("Ø´Ø§Ø±ÙƒÙ†Ø§ Ø±Ø£ÙŠÙƒ", "LEAVE A REVIEW")}</p>
-      <h3 className="mt-3 font-display text-2xl text-bone sm:text-3xl">
-        {L("ÙƒÙŠÙ ÙƒØ§Ù†Øª ØªØ¬Ø±Ø¨ØªÙƒØŸ", "How was your experience?")}
-      </h3>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        {L(
-          "ØªØ¸Ù‡Ø± Ù…Ø±Ø§Ø¬Ø¹ØªÙƒ Ù…Ø¨Ø§Ø´Ø±Ø©Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¨Ø¹Ø¯ Ø¥Ø±Ø³Ø§Ù„Ù‡Ø§.",
-          "Your review appears on the website immediately after you submit it.",
-        )}
-      </p>
+    <form
+      onSubmit={submit}
+      className="relative mt-8 overflow-hidden border border-gold/20 bg-ink/65 p-6 shadow-[0_28px_80px_-56px_rgba(0,0,0,.9)] sm:mt-10 sm:p-8 lg:p-10"
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute start-0 top-0 h-14 w-14 border-s border-t border-gold/60"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -end-20 -top-24 h-64 w-64 rounded-full bg-gold/[.06] blur-3xl"
+      />
+      <div className="relative">
+        <h3 className="font-display text-2xl text-bone sm:text-3xl">
+          {L("كيف كانت تجربتك معنا؟", "How was your visit?")}
+        </h3>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+          {L("مراجعتك رح تظهر مباشرة بعد الإرسال.", "Your review appears as soon as you send it.")}
+        </p>
 
-      <div className="mt-6 grid gap-5 md:grid-cols-[.8fr_1.2fr]">
-        <label className="grid gap-2 text-sm text-bone">
-          {L("Ø§Ù„Ø§Ø³Ù…", "Name")}
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={80}
-            autoComplete="name"
-            className="h-11 border border-gold/25 bg-ink px-3 text-bone outline-none transition focus:border-gold focus:ring-1 focus:ring-gold"
-            placeholder={L("Ø§ÙƒØªØ¨ Ø§Ø³Ù…Ùƒ Ø§Ù„Ø£ÙˆÙ„", "Your first name")}
+        <div className="mt-7 grid gap-5 md:grid-cols-[.8fr_1.2fr]">
+          <label className="grid gap-2 text-sm text-bone">
+            {L("الاسم", "Name")}
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={80}
+              autoComplete="name"
+              className="h-12 border border-gold/25 bg-charcoal/55 px-4 text-bone outline-none transition focus:border-gold focus:ring-1 focus:ring-gold"
+              placeholder={L("اكتب اسمك الأول", "Your first name")}
+              required
+            />
+          </label>
+
+          <fieldset className="grid gap-2">
+            <legend className="text-sm text-bone">{L("تقييمك", "Your rating")}</legend>
+            <div
+              className="flex h-12 items-center gap-1"
+              role="radiogroup"
+              aria-label={L("التقييم من خمس نجوم", "Rating out of five stars")}
+            >
+              {Array.from({ length: 5 }, (_, index) => {
+                const value = index + 1;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={rating === value}
+                    aria-label={L(
+                      value === 1 ? "نجمة واحدة" : value === 2 ? "نجمتان" : `${value} نجوم`,
+                      `${value} stars`,
+                    )}
+                    onClick={() => setRating(value)}
+                    className="rounded-sm p-1.5 text-gold transition duration-300 hover:-translate-y-0.5 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                  >
+                    <Star className="h-6 w-6" fill={value <= rating ? "currentColor" : "none"} />
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        </div>
+
+        <label className="mt-5 grid gap-2 text-sm text-bone">
+          {L("تعليقك", "Your comment")}
+          <textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            minLength={8}
+            maxLength={500}
+            rows={4}
+            className="min-h-32 resize-y border border-gold/25 bg-charcoal/55 p-4 leading-7 text-bone outline-none transition focus:border-gold focus:ring-1 focus:ring-gold"
+            placeholder={L("احكيلنا شو رأيك", "Tell us what you think")}
             required
           />
         </label>
 
-        <fieldset className="grid gap-2">
-          <legend className="text-sm text-bone">{L("Ø§Ù„ØªÙ‚ÙŠÙŠÙ…", "Your rating")}</legend>
-          <div className="flex h-11 items-center gap-1" role="radiogroup" aria-label={L("Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ù…Ù† Ø®Ù…Ø³ Ù†Ø¬ÙˆÙ…", "Rating out of five stars")}>
-            {Array.from({ length: 5 }, (_, index) => {
-              const value = index + 1;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={rating === value}
-                  aria-label={`${value} ${L("Ù†Ø¬ÙˆÙ…", "stars")}`}
-                  onClick={() => setRating(value)}
-                  className="rounded-sm p-1 text-gold transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
-                >
-                  <Star className="h-6 w-6" fill={value <= rating ? "currentColor" : "none"} />
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        <div
+          className="absolute -start-[10000px] top-auto h-px w-px overflow-hidden"
+          aria-hidden="true"
+        >
+          <label htmlFor="review-website">Website</label>
+          <input
+            id="review-website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+          />
+        </div>
+
+        {message ? (
+          <p
+            className={`mt-4 text-sm ${isSuccess ? "text-gold-soft" : "text-destructive"}`}
+            role="status"
+          >
+            {message}
+          </p>
+        ) : null}
+
+        <GoldButton type="submit" size="lg" disabled={submitting} className="mt-6 w-full sm:w-auto">
+          {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+          {submitting ? L("جارٍ الإرسال...", "Sending...") : L("إرسال المراجعة", "Submit review")}
+        </GoldButton>
       </div>
-
-      <label className="mt-5 grid gap-2 text-sm text-bone">
-        {L("ØªØ¹Ù„ÙŠÙ‚Ùƒ", "Your comment")}
-        <textarea
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-          minLength={8}
-          maxLength={500}
-          rows={4}
-          className="resize-y border border-gold/25 bg-ink p-3 leading-7 text-bone outline-none transition focus:border-gold focus:ring-1 focus:ring-gold"
-          placeholder={L("Ø£Ø®Ø¨Ø±Ù†Ø§ Ø¹Ù† ØªØ¬Ø±Ø¨ØªÙƒ ÙÙŠ Ù…Ø·Ø¹Ù… Ø§Ù„ÙƒÙ…Ø§Ù„", "Tell us about your experience at Al Kamal")}
-          required
-        />
-      </label>
-
-      <div className="absolute -start-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
-        <label htmlFor="review-website">Website</label>
-        <input
-          id="review-website"
-          tabIndex={-1}
-          autoComplete="off"
-          value={website}
-          onChange={(event) => setWebsite(event.target.value)}
-        />
-      </div>
-
-      {message ? (
-        <p className={`mt-4 text-sm ${isSuccess ? "text-gold-soft" : "text-destructive"}`} role="status">
-          {message}
-        </p>
-      ) : null}
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="mt-6 inline-flex h-11 items-center justify-center gap-2 bg-gold px-5 font-medium text-ink transition hover:bg-gold-soft disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {submitting ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-        {submitting ? L("Ø¬Ø§Ø±Ù Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...", "Sending...") : L("Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©", "Submit review")}
-      </button>
     </form>
   );
 }

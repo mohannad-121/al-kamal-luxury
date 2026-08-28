@@ -26,15 +26,12 @@ function Confirmed() {
           <span className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-gold/45 bg-gold/10 text-gold">
             <CheckCircle2 className="h-10 w-10" />
           </span>
-          <p className="mt-8 eyebrow">{L("تم الاستلام بنجاح", "ORDER RECEIVED")}</p>
+          <p className="mt-8 eyebrow">{L("تم تأكيد الطلب", "ORDER CONFIRMED")}</p>
           <h1 className="mt-4 text-4xl leading-tight text-bone sm:text-5xl">
-            {L("شكراً، طلبك صار عندنا.", "Thank you, your order is with us.")}
+            {L("شكرًا! طلبك صار عندنا.", "Thanks! Your order is confirmed.")}
           </h1>
           <p className="mt-5 leading-8 text-muted-foreground">
-            {L(
-              "حضّرنا رقم طلبك لتقدر تتابع كل مرحلة بسهولة.",
-              "We’ve prepared your order number so you can follow every step.",
-            )}
+            {L("خلّي رقم الطلب معك عشان تقدر تتابعه.", "Keep your order number to track it.")}
           </p>
           <div className="mt-8 border border-gold/30 bg-charcoal/60 p-6">
             <p className="text-sm text-muted-foreground">{L("رقم الطلب", "ORDER NUMBER")}</p>

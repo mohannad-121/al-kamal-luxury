@@ -18,12 +18,12 @@ function OrderNow() {
         <div className="mx-auto max-w-2xl text-center">
           <p className="eyebrow">{L("اطلب أونلاين", "ORDER ONLINE")}</p>
           <h1 className="mt-3 text-4xl text-bone sm:mt-4 sm:text-6xl">
-            {L("اطلب من الكمال", "Order from Al Kamal")}
+            {L("اطلب على طلبات", "Order on Talabat")}
           </h1>
           <p className="mt-4 leading-7 text-muted-foreground">
             {L(
-              "اضغط على طلبات للانتقال مباشرةً إلى صفحة المطعم وإتمام طلبك.",
-              "Choose Talabat to go directly to our restaurant page and complete your order.",
+              "افتح صفحة المطعم على طلبات وكمّل طلبك.",
+              "Open our Talabat page to place your order.",
             )}
           </p>
         </div>
@@ -46,11 +46,11 @@ function OrderNow() {
               />
             </div>
             <span className="mt-7 flex items-center gap-2 font-display text-2xl text-bone group-hover:text-gold">
-              {L("اطلب عبر طلبات", "Order via Talabat")}
+              {L("افتح طلبات", "Open Talabat")}
               <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="mt-2 text-sm text-muted-foreground">
-              {L("اضغط للانتقال إلى طلبات", "Click to continue to Talabat")}
+              {L("بتفتح في تبويب جديد", "Opens in a new tab")}
             </span>
           </a>
         </div>

@@ -49,7 +49,7 @@ export function ProductSheet({ product, onClose }: Props) {
 
   const submit = () => {
     add({ product, qty, extras, ...(note.trim() ? { note: note.trim() } : {}) });
-    toast.success(L("تمت الإضافة لطلبك", "Added to your order"), {
+    toast.success(L("انضاف لطلبك", "Added to your order"), {
       description: L(product.nameAr, product.nameEn),
     });
     onClose();
@@ -170,7 +170,7 @@ export function ProductSheet({ product, onClose }: Props) {
                   <Price value={unit * qty} />
                 </>
               ) : (
-                L("غير متوفر حالياً", "Currently unavailable")
+                L("غير متوفر حاليًا", "Unavailable")
               )}
             </GoldButton>
           </div>

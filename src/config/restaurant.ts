@@ -5,9 +5,9 @@
 export const restaurant = {
   nameAr: "مطعم الكمال",
   nameEn: "Al Kamal Restaurant",
-  sloganAr: "أكل شعبي... بطعم الكمال",
-  sloganEn: "Homestyle food, perfected daily",
-  headlineAr: "نكهة الكمال",
+  sloganAr: "فطور شعبي طازج كل يوم.",
+  sloganEn: "Fresh Jordanian breakfast every day.",
+  headlineAr: "فطور شعبي على أصوله",
   phone: "+962 7 9000 0000",
   whatsapp: "962790000000",
   addressAr: "الرصيفة، الزرقاء، الأردن",

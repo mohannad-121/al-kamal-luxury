@@ -18,7 +18,7 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
     <>
       {product.popular ? (
         <span className="border border-gold/50 bg-ink/70 px-2.5 py-1 text-[0.62rem] tracking-[0.2em] text-gold backdrop-blur">
-          {L("الأكثر طلباً", "POPULAR")}
+          {L("الأكثر طلبًا", "POPULAR")}
         </span>
       ) : null}
       {!product.available ? (

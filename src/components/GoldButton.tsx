@@ -10,31 +10,26 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  "relative inline-flex items-center justify-center gap-2 overflow-hidden font-medium tracking-wide transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] disabled:pointer-events-none disabled:opacity-45";
+  "relative inline-flex touch-manipulation select-none items-center justify-center gap-2 whitespace-nowrap rounded-[var(--control-radius)] border font-semibold tracking-[0.015em] transition-[transform,background-color,border-color,color,box-shadow] duration-200 ease-out active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-soft/75 focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45 disabled:active:transform-none motion-reduce:transition-none motion-reduce:active:transform-none";
 
 const variants: Record<Variant, string> = {
-  gold:
-    "bg-[image:var(--gradient-gold)] text-ink hover:shadow-[var(--shadow-gold)] hover:brightness-110",
+  gold: "border-gold-soft/55 bg-[linear-gradient(180deg,var(--gold-soft),var(--gold))] text-ink shadow-[0_7px_18px_-14px_oklch(0.716_0.107_78.5/.8)] hover:border-gold-soft hover:brightness-[1.04] hover:shadow-[0_9px_22px_-15px_oklch(0.716_0.107_78.5/.75)]",
   outline:
-    "border border-gold/45 text-bone hover:border-gold hover:bg-gold/10 hover:text-gold-soft",
-  ghost: "text-bone/80 hover:text-gold",
-  dark: "bg-charcoal text-bone border border-gold/20 hover:border-gold/50 hover:bg-warm-charcoal",
+    "border-gold/40 bg-transparent text-bone hover:border-gold/65 hover:bg-gold/[.07] hover:text-gold-soft",
+  ghost: "border-transparent bg-transparent text-bone/75 hover:bg-gold/[.06] hover:text-gold-soft",
+  dark: "border-gold/20 bg-charcoal text-bone hover:border-gold/40 hover:bg-warm-charcoal",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-4 text-[0.8rem]",
-  md: "h-11 px-6 text-[0.9rem]",
-  lg: "h-14 px-9 text-[0.95rem]",
+  sm: "h-10 px-4 text-[0.78rem]",
+  md: "h-11 px-5 text-[0.86rem]",
+  lg: "h-13 px-7 text-[0.92rem] sm:px-8",
 };
 
 export const GoldButton = forwardRef<HTMLButtonElement, Props>(
   ({ className, variant = "gold", size = "md", children, ...rest }, ref) => (
-    <button
-      ref={ref}
-      className={cn(base, variants[variant], sizes[size], "rounded-sm", className)}
-      {...rest}
-    >
-      <span className="relative z-10 flex items-center gap-2">{children}</span>
+    <button ref={ref} className={cn(base, variants[variant], sizes[size], className)} {...rest}>
+      <span className="flex items-center justify-center gap-2 [&_svg]:shrink-0">{children}</span>
     </button>
   ),
 );

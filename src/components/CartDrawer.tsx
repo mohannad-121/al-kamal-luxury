@@ -30,8 +30,8 @@ export function CartDrawer() {
       <aside className="absolute inset-y-0 end-0 flex w-full flex-col border-s border-gold/25 bg-[color:var(--ink)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-lux)] animate-in slide-in-from-bottom-8 duration-500 sm:max-w-md sm:pb-0 sm:slide-in-from-bottom-0">
         <header className="flex items-center justify-between border-b border-border px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:py-5">
           <div>
-            <p className="eyebrow">{L("طلبك", "YOUR ORDER")}</p>
-            <h2 className="mt-1 text-xl text-bone">{L("سلة الكمال", "Al Kamal Cart")}</h2>
+            <p className="eyebrow">{L("السلة", "CART")}</p>
+            <h2 className="mt-1 text-xl text-bone">{L("طلبك", "Your order")}</h2>
           </div>
           <button
             onClick={() => cart.setOpen(false)}
@@ -47,14 +47,9 @@ export function CartDrawer() {
             <span className="grid h-20 w-20 place-items-center rounded-full border border-gold/25 text-gold">
               <ShoppingBag className="h-7 w-7" />
             </span>
-            <h3 className="mt-6 text-xl text-bone">
-              {L("لسا ما اخترت طلبك 👀", "Your order is still empty 👀")}
-            </h3>
+            <h3 className="mt-6 text-xl text-bone">{L("السلة فاضية", "Your cart is empty")}</h3>
             <p className="mt-3 text-sm text-muted-foreground">
-              {L(
-                "اكتشف منيو الكمال واختار اللي عبالك.",
-                "Explore the Al Kamal menu and pick what you love.",
-              )}
+              {L("اختار اللي بدك إياه من المنيو.", "Choose what you want from the menu.")}
             </p>
             <Link to="/menu" onClick={() => cart.setOpen(false)} className="mt-7 w-full">
               <GoldButton className="w-full" size="lg">
@@ -163,7 +158,7 @@ export function CartDrawer() {
                 </GoldButton>
               </Link>
               <p className="mt-3 text-center text-[0.68rem] text-muted-foreground">
-                {L("أسعار وبيانات تجريبية للعرض", "Demo prices for presentation")}
+                {L("الأسعار تجريبية", "Demo prices")}
               </p>
             </footer>
           </>

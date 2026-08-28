@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { restaurant } from "@/config/restaurant";
 import type { CartExtra, CartLine, Product } from "@/types";
 
@@ -53,7 +61,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const add = useCallback(({ product, qty, extras, note }: AddInput) => {
     const unitPrice =
       product.price - (product.discount ?? 0) + extras.reduce((s, e) => s + e.price, 0);
-    const signature = `${product.id}|${extras.map((e) => e.id).sort().join(",")}|${note ?? ""}`;
+    const signature = `${product.id}|${extras
+      .map((e) => e.id)
+      .sort()
+      .join(",")}|${note ?? ""}`;
     setLines((prev) => {
       const existing = prev.find((l) => l.lineId === signature);
       if (existing) {

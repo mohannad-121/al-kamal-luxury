@@ -20,11 +20,12 @@ export const Route = createFileRoute("/track-order")({
 });
 const flow = ["received", "preparing", "ready", "on_the_way", "delivered"] as const;
 const labels = {
-  received: ["تم استلام الطلب", "Order received"],
-  preparing: ["قيد التحضير", "Preparing"],
-  ready: ["جاهز للاستلام", "Ready"],
-  on_the_way: ["خرج للتوصيل", "On the way"],
-  delivered: ["تم التوصيل", "Delivered"],
+  received: ["استلمنا طلبك", "Order received"],
+  preparing: ["عم بنحضّر طلبك", "Preparing"],
+  ready: ["طلبك جاهز", "Ready"],
+  on_the_way: ["طلبك بالطريق", "On the way"],
+  delivered: ["وصل طلبك", "Delivered"],
+  cancelled: ["تم إلغاء الطلب", "Order cancelled"],
 } as const;
 function TrackOrder() {
   const { L } = useLang();
@@ -41,9 +42,7 @@ function TrackOrder() {
     setSearched(true);
     setLoading(false);
   };
-  const current = order
-    ? flow.indexOf(order.status === "cancelled" ? "received" : order.status)
-    : -1;
+  const current = order && order.status !== "cancelled" ? flow.indexOf(order.status) : -1;
   return (
     <main>
       <Navbar />
@@ -101,12 +100,13 @@ function TrackOrder() {
                 <div>
                   <p className="eyebrow">{order.id}</p>
                   <h2 className="mt-2 text-2xl text-bone">
-                    {L("طلب", "Order")}{" "}
-                    {order.type === "delivery" ? L("توصيل", "delivery") : L("استلام", "pickup")}
+                    {order.type === "delivery"
+                      ? L("طلب توصيل", "Delivery order")
+                      : L("طلب استلام", "Pickup order")}
                   </h2>
                 </div>
                 <span className="h-fit border border-gold/30 px-3 py-2 text-sm text-gold">
-                  {L(...labels[order.status === "cancelled" ? "received" : order.status])}
+                  {L(...labels[order.status])}
                 </span>
               </div>
               <ol className="mt-8 grid gap-5 sm:grid-cols-5">
@@ -130,7 +130,7 @@ function TrackOrder() {
                 ))}
               </ol>
               <div className="mt-8 border-t border-gold/15 pt-5">
-                <p className="text-sm text-muted-foreground">{L("محتويات الطلب", "ORDER ITEMS")}</p>
+                <p className="text-sm text-muted-foreground">{L("تفاصيل الطلب", "ORDER ITEMS")}</p>
                 {order.items.map((item, index) => (
                   <div
                     key={`${item.nameAr}-${index}`}

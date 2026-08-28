@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -87,11 +88,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "مطعم الكمال | أكل شعبي بطعم الكمال" },
-      { name: "description", content: "مطعم الكمال - أكل شعبي أردني أصيل، محضّر يومياً بعناية." },
+      { title: "مطعم الكمال | فطور شعبي في الرصيفة" },
+      {
+        name: "description",
+        content: "مطعم الكمال في الرصيفة: حمص، فول، فلافل، ساندويشات ومشروبات.",
+      },
       { name: "author", content: "Al Kamal Restaurant" },
       { property: "og:title", content: "مطعم الكمال" },
-      { property: "og:description", content: "أكل شعبي بطعم الكمال" },
+      {
+        property: "og:description",
+        content: "فطور شعبي في الرصيفة: حمص، فول، فلافل وساندويشات.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#15120f" },
@@ -132,15 +139,23 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const content = (
+    <>
+      <Outlet />
+      <MobileBottomNav />
+    </>
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MenuProvider>
-        <DailySalesProvider>
-          <Outlet />
-          <MobileBottomNav />
-        </DailySalesProvider>
-      </MenuProvider>
+      {pathname.startsWith("/admin") ? (
+        <MenuProvider>
+          <DailySalesProvider>{content}</DailySalesProvider>
+        </MenuProvider>
+      ) : (
+        content
+      )}
     </QueryClientProvider>
   );
 }
