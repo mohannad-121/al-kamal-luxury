@@ -13,6 +13,9 @@ import type { DailyReport, DailySaleItem, Product } from "@/types";
 
 type SaleResult = { ok: true } | { ok: false; ingredientId: string };
 
+// Sales recorded before this reset belong to the original demo data.
+const HISTORY_START_DATE = "2026-08-30";
+
 interface DailySalesContextValue {
   activeDate: string;
   quantities: Record<string, number>;
@@ -28,7 +31,7 @@ interface DailySalesContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   recordSale: (product: Product) => Promise<SaleResult>;
-  undoSale: (product: Product) => Promise<void>;
+  undoSale: (product: Product) => Promise<boolean>;
   addStock: (ingredientId: string, amount: number) => Promise<void>;
   closeDay: () => Promise<DailyReport | null>;
 }
@@ -66,6 +69,24 @@ const DailySalesContext = createContext<DailySalesContextValue | null>(null);
 
 function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Amman" }).format(new Date());
+}
+
+async function purgeLegacyHistory() {
+  const { data: legacySessions, error: lookupError } = await supabase
+    .from("daily_sessions")
+    .select("id")
+    .eq("is_closed", true)
+    .lt("business_date", HISTORY_START_DATE);
+  if (lookupError || !legacySessions?.length) return;
+
+  const sessionIds = legacySessions.map((session) => session.id);
+  const [salesDelete, usageDelete] = await Promise.all([
+    supabase.from("daily_item_sales").delete().in("session_id", sessionIds),
+    supabase.from("daily_ingredient_usage").delete().in("session_id", sessionIds),
+  ]);
+  if (salesDelete.error || usageDelete.error) return;
+
+  await supabase.from("daily_sessions").delete().in("id", sessionIds).eq("is_closed", true);
 }
 
 export function DailySalesProvider({ children }: { children: ReactNode }) {
@@ -143,12 +164,14 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
       setIngredientUsage({});
     }
 
+    await purgeLegacyHistory();
     const { data: historyData, error: historyError } = await supabase
       .from("daily_sessions")
       .select(
         "id, business_date, closed_at, total_revenue, total_items_sold, total_sales_entries, closing_inventory, daily_item_sales(menu_item_id, item_name_ar, item_name_en, category_id, unit_price, quantity_sold, revenue), daily_ingredient_usage(ingredient_id, quantity_used)",
       )
       .eq("is_closed", true)
+      .gte("business_date", HISTORY_START_DATE)
       .order("business_date", { ascending: false });
     if (historyError) setError(historyError.message);
     setHistory(
@@ -230,19 +253,171 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
 
   const undoSale = useCallback(
     async (product: Product) => {
-      if (!activeSession) return;
+      const currentSale = itemSales.find((item) => item.productId === product.id);
+      if (!activeSession || !currentSale || currentSale.quantity <= 0) return false;
+
+      setError(null);
+      const nextQuantity = currentSale.quantity - 1;
       const { error: undoError } = await supabase.rpc("record_sale", {
         p_session_id: activeSession.id,
         p_menu_item_id: product.id,
         p_delta: -1,
       });
-      if (undoError) {
-        setError(undoError.message);
-        return;
+
+      const { data: verifiedSale, error: verificationError } = await supabase
+        .from("daily_item_sales")
+        .select("quantity_sold")
+        .eq("session_id", activeSession.id)
+        .eq("menu_item_id", product.id)
+        .maybeSingle();
+      const verifiedQuantity = verifiedSale ? Number(verifiedSale.quantity_sold) : 0;
+
+      if (!undoError && !verificationError && verifiedQuantity === nextQuantity) {
+        await sync();
+        return true;
       }
-      await sync();
+
+      // Some deployed versions of record_sale reject or ignore a delta that
+      // would reduce a row to zero. Fall back to verified admin updates so the
+      // minus button can always reverse one recorded sale.
+      if (!undoError && verificationError) {
+        setError(verificationError.message);
+        await sync();
+        return false;
+      }
+      if (!undoError && verifiedQuantity !== currentSale.quantity) {
+        await sync();
+        return verifiedQuantity < currentSale.quantity;
+      }
+
+      const rollback: Array<() => Promise<void>> = [];
+      try {
+        const nextRevenue = Math.max(
+          0,
+          Number((currentSale.revenue - currentSale.unitPrice).toFixed(3)),
+        );
+        const { data: saleRows, error: saleUpdateError } = await supabase
+          .from("daily_item_sales")
+          .update({ quantity_sold: nextQuantity, revenue: nextRevenue })
+          .eq("session_id", activeSession.id)
+          .eq("menu_item_id", product.id)
+          .eq("quantity_sold", currentSale.quantity)
+          .select("menu_item_id");
+        if (saleUpdateError || saleRows?.length !== 1) {
+          throw new Error(
+            saleUpdateError?.message ?? "The sale changed on another device. Try again.",
+          );
+        }
+        rollback.push(async () => {
+          await supabase
+            .from("daily_item_sales")
+            .update({ quantity_sold: currentSale.quantity, revenue: currentSale.revenue })
+            .eq("session_id", activeSession.id)
+            .eq("menu_item_id", product.id)
+            .eq("quantity_sold", nextQuantity);
+        });
+
+        for (const recipeItem of product.recipe ?? []) {
+          const currentUsage = ingredientUsage[recipeItem.ingredientId] ?? 0;
+          const reversalQuantity = Math.min(currentUsage, recipeItem.quantity);
+          if (reversalQuantity <= 0) continue;
+          const nextUsage = currentUsage - reversalQuantity;
+          const { data: usageRows, error: usageUpdateError } = await supabase
+            .from("daily_ingredient_usage")
+            .update({ quantity_used: nextUsage })
+            .eq("session_id", activeSession.id)
+            .eq("ingredient_id", recipeItem.ingredientId)
+            .eq("quantity_used", currentUsage)
+            .select("ingredient_id");
+          if (usageUpdateError || usageRows?.length !== 1) {
+            throw new Error(
+              usageUpdateError?.message ?? "Ingredient usage changed on another device. Try again.",
+            );
+          }
+          rollback.push(async () => {
+            await supabase
+              .from("daily_ingredient_usage")
+              .update({ quantity_used: currentUsage })
+              .eq("session_id", activeSession.id)
+              .eq("ingredient_id", recipeItem.ingredientId)
+              .eq("quantity_used", nextUsage);
+          });
+        }
+
+        const nextSessionRevenue = Math.max(
+          0,
+          Number((Number(activeSession.total_revenue) - currentSale.unitPrice).toFixed(3)),
+        );
+        const nextItemsSold = Math.max(0, Number(activeSession.total_items_sold) - 1);
+        const nextSalesEntries = Math.max(0, Number(activeSession.total_sales_entries) - 1);
+        const { data: sessionRows, error: sessionUpdateError } = await supabase
+          .from("daily_sessions")
+          .update({
+            total_revenue: nextSessionRevenue,
+            total_items_sold: nextItemsSold,
+            total_sales_entries: nextSalesEntries,
+          })
+          .eq("id", activeSession.id)
+          .eq("total_items_sold", activeSession.total_items_sold)
+          .select("id");
+        if (sessionUpdateError || sessionRows?.length !== 1) {
+          throw new Error(
+            sessionUpdateError?.message ?? "Daily totals changed on another device. Try again.",
+          );
+        }
+        rollback.push(async () => {
+          await supabase
+            .from("daily_sessions")
+            .update({
+              total_revenue: activeSession.total_revenue,
+              total_items_sold: activeSession.total_items_sold,
+              total_sales_entries: activeSession.total_sales_entries,
+            })
+            .eq("id", activeSession.id)
+            .eq("total_items_sold", nextItemsSold);
+        });
+
+        for (const recipeItem of product.recipe ?? []) {
+          const reversalQuantity = Math.min(
+            ingredientUsage[recipeItem.ingredientId] ?? 0,
+            recipeItem.quantity,
+          );
+          if (reversalQuantity <= 0) continue;
+          const { error: inventoryError } = await supabase.rpc("adjust_inventory", {
+            p_ingredient_id: recipeItem.ingredientId,
+            p_quantity_change: reversalQuantity,
+            p_note: `Removed sale: ${product.nameEn}`,
+          });
+          if (inventoryError) throw new Error(inventoryError.message);
+          rollback.push(async () => {
+            await supabase.rpc("adjust_inventory", {
+              p_ingredient_id: recipeItem.ingredientId,
+              p_quantity_change: -reversalQuantity,
+              p_note: `Rollback removed sale: ${product.nameEn}`,
+            });
+          });
+        }
+
+        if (nextQuantity === 0) {
+          await supabase
+            .from("daily_item_sales")
+            .delete()
+            .eq("session_id", activeSession.id)
+            .eq("menu_item_id", product.id)
+            .eq("quantity_sold", 0);
+        }
+
+        await sync();
+        return true;
+      } catch (caught) {
+        for (const restore of rollback.reverse()) await restore();
+        const message = caught instanceof Error ? caught.message : undoError?.message;
+        setError(message ?? "Unable to remove this sale.");
+        await sync();
+        return false;
+      }
     },
-    [activeSession, sync],
+    [activeSession, ingredientUsage, itemSales, sync],
   );
 
   const addStock = useCallback(

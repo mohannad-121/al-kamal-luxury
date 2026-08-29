@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronDown,
   History,
+  LoaderCircle,
   Minus,
   Package,
   Plus,
@@ -78,6 +79,7 @@ function DailySales() {
   const [search, setSearch] = useState("");
   const [stockMessage, setStockMessage] = useState("");
   const [isConfirmingClose, setIsConfirmingClose] = useState(false);
+  const [pendingSaleId, setPendingSaleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (databaseError) setStockMessage(databaseError);
@@ -135,6 +137,15 @@ function DailySales() {
       return;
     }
     setStockMessage("");
+  };
+
+  const removeSale = async (product: Product) => {
+    setPendingSaleId(product.id);
+    try {
+      if (await undoSale(product)) setStockMessage("");
+    } finally {
+      setPendingSaleId(null);
+    }
   };
 
   const restock = async (ingredientId: string) => {
@@ -354,17 +365,22 @@ function DailySales() {
                     <div className="mt-4 grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2">
                       <button
                         type="button"
-                        onClick={() => void undoSale(product)}
-                        disabled={!quantity}
+                        onClick={() => void removeSale(product)}
+                        disabled={!quantity || pendingSaleId === product.id}
+                        aria-busy={pendingSaleId === product.id}
                         aria-label={L(`إزالة ${product.nameAr}`, `Remove ${product.nameEn}`)}
                         className="grid min-h-14 place-items-center border border-gold/25 text-gold transition-colors hover:border-gold disabled:cursor-not-allowed disabled:opacity-35"
                       >
-                        <Minus className="h-5 w-5" />
+                        {pendingSaleId === product.id ? (
+                          <LoaderCircle className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Minus className="h-5 w-5" />
+                        )}
                       </button>
                       <button
                         type="button"
                         onClick={() => void sell(product)}
-                        disabled={!canSell}
+                        disabled={!canSell || pendingSaleId === product.id}
                         className="inline-flex min-h-14 items-center justify-center gap-2 bg-gold px-4 text-base font-semibold text-ink transition-colors hover:bg-gold-soft disabled:cursor-not-allowed disabled:bg-gold/35"
                       >
                         <Plus className="h-6 w-6" /> {L("تسجيل بيع", "Add sale")}
