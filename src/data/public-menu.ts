@@ -276,6 +276,7 @@ export const publicMenuSections: PublicMenuSection[] = [
               "1 صحن حمص كبير + 1 صحن فول كبير + 30 حبة فلافل + بطاطا + 12 قطعة خبز + صحن شكشوكة + ساندويشان حسب الاختيار (برغر أو فاهيتا أو سكالوب أو زنجر)",
             nameEn:
               "1 large hummus plate + 1 large foul plate + 30 falafel pieces + fries + 12 pieces of bread + shakshuka plate + 2 sandwiches of your choice (burger, fajita, escalope, or zinger)",
+            price: 6.5,
           },
         ],
       },

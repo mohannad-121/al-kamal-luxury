@@ -58,6 +58,7 @@ const folderImages = {
     popularBreakfast: menuImage("Offers", "عرض الفطور الشعبي.jpg"),
     royalBreakfast: menuImage("Offers", "عرض الفطور الملكي.jpg"),
     galayeh: menuImage("Offers", "عرض القلاية.jpg"),
+    hungry: menuImage("Offers", "عرض الجوعان.jpg"),
   },
 };
 
@@ -134,6 +135,7 @@ export function getMenuItemImage(
       if (name.includes("الشعبي") || name.includes("popular"))
         return folderImages.offers.popularBreakfast;
       if (name.includes("القلاية") || name.includes("galayeh")) return folderImages.offers.galayeh;
+      if (name.includes("الجوعان") || name.includes("hungry")) return folderImages.offers.hungry;
       return folderImages.offers.falafel;
     default:
       return product.image;
