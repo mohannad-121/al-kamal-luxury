@@ -123,6 +123,165 @@ const breakfastPlateItems: PublicMenuItem[] = breakfastPlateItemNames.map(
 
 export const publicMenuSections: PublicMenuSection[] = [
   {
+    id: "offers",
+    nameAr: "العروض",
+    nameEn: "Offers",
+    image: menuCategoryImages.offers,
+    imagePosition: "50% 50%",
+    items: [
+      {
+        id: "offer-abu-al-falafel",
+        nameAr: "عرض أبو الفلافل",
+        nameEn: "Abu Al Falafel Offer",
+        featured: true,
+        options: [
+          {
+            id: "offer-abu-al-falafel-meal",
+            nameAr: "3 ساندويشات فلافل + بطاطا",
+            nameEn: "3 falafel sandwiches + fries",
+            price: 1.5,
+          },
+        ],
+      },
+      {
+        id: "offer-popular-breakfast",
+        nameAr: "عرض الفطور الشعبي",
+        nameEn: "Popular Breakfast Offer",
+        options: [
+          {
+            id: "offer-popular-breakfast-meal",
+            nameAr: "1 صحن حمص صغير + 1 صحن فول صغير + 10 حبات فلافل + 6 قطع خبز",
+            nameEn:
+              "1 small hummus plate + 1 small foul plate + 10 falafel pieces + 6 pieces of bread",
+            price: 1.75,
+          },
+        ],
+      },
+      {
+        id: "offer-royal-breakfast",
+        nameAr: "عرض الفطور الملكي",
+        nameEn: "Royal Breakfast Offer",
+        featured: true,
+        options: [
+          {
+            id: "offer-royal-breakfast-meal",
+            nameAr: "1 صحن حمص كبير + 1 صحن فول كبير + 20 حبة فلافل + بطاطا + 8 قطع خبز",
+            nameEn:
+              "1 large hummus plate + 1 large foul plate + 20 falafel pieces + fries + 8 pieces of bread",
+            price: 3,
+          },
+        ],
+      },
+      {
+        id: "offer-galayeh",
+        nameAr: "عرض القلاية",
+        nameEn: "Galayeh Offer",
+        options: [
+          {
+            id: "offer-galayeh-meal",
+            nameAr: "1 صحن شكشوكة + بطاطا + 6 قطع خبز",
+            nameEn: "1 shakshuka plate + fries + 6 pieces of bread",
+            price: 1.75,
+          },
+        ],
+      },
+      {
+        id: "offer-hungry",
+        nameAr: "عرض الجوعان",
+        nameEn: "Hungry Offer",
+        options: [
+          {
+            id: "offer-hungry-meal",
+            nameAr:
+              "1 ساندويش حسب الاختيار (زنجر أو فاهيتا أو برغر أو سكالوب) + بطاطا كبيرة + مشروب",
+            nameEn:
+              "1 sandwich of your choice (zinger, fajita, burger, or escalope) + 1 large fries + drink",
+            price: 2,
+          },
+        ],
+      },
+      {
+        id: "offer-falafel-sandwiches",
+        nameAr: "عروض ساندويش الفلافل",
+        nameEn: "Falafel Sandwich Offers",
+        options: [
+          {
+            id: "offer-falafel-sandwich-one",
+            nameAr: "ساندويش فلافل واحد",
+            nameEn: "1 falafel sandwich",
+            price: 0.3,
+          },
+          {
+            id: "offer-falafel-sandwich-three",
+            nameAr: "3 ساندويشات فلافل",
+            nameEn: "3 falafel sandwiches",
+            price: 0.8,
+          },
+          {
+            id: "offer-falafel-sandwich-five",
+            nameAr: "5 ساندويشات فلافل",
+            nameEn: "5 falafel sandwiches",
+            price: 1.25,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "family-meals",
+    nameAr: "الوجبات العائلية",
+    nameEn: "Family Meals",
+    image: menuCategoryImages["family-meals"],
+    imagePosition: "50% 50%",
+    items: [
+      {
+        id: "family-al-kamal",
+        nameAr: "عيلة الكمال",
+        nameEn: "Al Kamal Family",
+        featured: true,
+        options: [
+          {
+            id: "family-al-kamal-meal",
+            nameAr: "1 صحن حمص صغير + 1 صحن فول صغير + 15 حبة فلافل + بطاطا + 6 قطع خبز",
+            nameEn:
+              "1 small hummus plate + 1 small foul plate + 15 falafel pieces + fries + 6 pieces of bread",
+            price: 2.5,
+          },
+        ],
+      },
+      {
+        id: "family-al-kamal-large",
+        nameAr: "عيلة الكمال الكبيرة",
+        nameEn: "Al Kamal Large Family",
+        featured: true,
+        options: [
+          {
+            id: "family-al-kamal-large-meal",
+            nameAr:
+              "1 صحن حمص كبير + 1 صحن فول كبير + 20 حبة فلافل + بطاطا + 8 قطع خبز + صحن شكشوكة",
+            nameEn:
+              "1 large hummus plate + 1 large foul plate + 20 falafel pieces + fries + 8 pieces of bread + shakshuka plate",
+            price: 4,
+          },
+        ],
+      },
+      {
+        id: "family-al-kamal-feast",
+        nameAr: "عزومة الكمال",
+        nameEn: "Al Kamal Feast",
+        options: [
+          {
+            id: "family-al-kamal-feast-meal",
+            nameAr:
+              "1 صحن حمص كبير + 1 صحن فول كبير + 30 حبة فلافل + بطاطا + 12 قطعة خبز + صحن شكشوكة + ساندويشان حسب الاختيار (برغر أو فاهيتا أو سكالوب أو زنجر)",
+            nameEn:
+              "1 large hummus plate + 1 large foul plate + 30 falafel pieces + fries + 12 pieces of bread + shakshuka plate + 2 sandwiches of your choice (burger, fajita, escalope, or zinger)",
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: "boxes",
     nameAr: "العلب",
     nameEn: "Takeaway Boxes",

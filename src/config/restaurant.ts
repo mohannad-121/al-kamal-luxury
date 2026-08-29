@@ -8,8 +8,8 @@ export const restaurant = {
   sloganAr: "فطور شعبي طازج كل يوم.",
   sloganEn: "Fresh Jordanian breakfast every day.",
   headlineAr: "فطور شعبي على أصوله",
-  phone: "+962 7 9000 0000",
-  whatsapp: "962790000000",
+  phone: "+962 7 76461172",
+  whatsapp: "https://wa.me/962776461172",
   addressAr: "الرصيفة، الزرقاء، الأردن",
   addressEn: "Russeifa, Zarqa, Jordan",
   mapsUrl: "https://maps.app.goo.gl/iQJGggKsrK5r3Txm9",
@@ -20,9 +20,9 @@ export const restaurant = {
   deliveryFeeDefault: 1.5,
   demoDiscount: 0.5,
   social: {
-    instagram: "https://instagram.com",
-    facebook: "https://facebook.com",
-    tiktok: "https://tiktok.com",
+    instagram: "https://www.instagram.com/almotasemhamdan",
+    facebook: "https://www.facebook.com/profile.php?id=61593352971224",
+    tiktok: "https://www.tiktok.com/2lm3t9m",
   },
   hours: [
     {

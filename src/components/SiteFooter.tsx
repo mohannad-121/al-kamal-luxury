@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Clock3, MapPin, Phone } from "lucide-react";
+import { Clock3, Facebook, Instagram, MapPin, MessageCircle, Music2, Phone } from "lucide-react";
 import { restaurant } from "@/config/restaurant";
 import { useLang } from "@/hooks/use-lang";
 
@@ -26,6 +26,35 @@ export function SiteFooter() {
           <p className="mt-4 max-w-md text-sm leading-7 text-muted-foreground sm:mt-5">
             {L(restaurant.sloganAr, restaurant.sloganEn)}
           </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <a
+              href={restaurant.social.instagram}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="grid h-10 w-10 place-items-center border border-gold/20 text-gold transition-colors hover:border-gold hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-soft/65"
+            >
+              <Instagram className="h-4 w-4" />
+            </a>
+            <a
+              href={restaurant.social.facebook}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+              className="grid h-10 w-10 place-items-center border border-gold/20 text-gold transition-colors hover:border-gold hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-soft/65"
+            >
+              <Facebook className="h-4 w-4" />
+            </a>
+            <a
+              href={restaurant.social.tiktok}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="TikTok"
+              className="grid h-10 w-10 place-items-center border border-gold/20 text-gold transition-colors hover:border-gold hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-soft/65"
+            >
+              <Music2 className="h-4 w-4" />
+            </a>
+          </div>
         </section>
 
         <nav
@@ -67,6 +96,17 @@ export function SiteFooter() {
                 <Phone aria-hidden="true" className="h-3.5 w-3.5" />
               </span>
               <span dir="ltr">{restaurant.phone}</span>
+            </a>
+            <a
+              href={restaurant.whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className="flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] transition-colors duration-200 hover:text-gold-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-soft/65 motion-reduce:transition-none"
+            >
+              <span className="grid h-8 w-6 shrink-0 place-items-center text-gold">
+                <MessageCircle aria-hidden="true" className="h-3.5 w-3.5" />
+              </span>
+              <span>{L("واتساب", "WhatsApp")}</span>
             </a>
             <a
               href={restaurant.mapsUrl}

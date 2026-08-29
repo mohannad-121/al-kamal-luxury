@@ -48,6 +48,17 @@ const folderImages = {
     lemon: menuImage("Drinks", "علبة ماتركس ليمون.png"),
     cola: menuImage("Drinks", "علبة ماتركس كولا.png"),
   },
+  familyMeals: {
+    family: menuImage("Family meals", "عيلة الكمال.jpg"),
+    largeFamily: menuImage("Family meals", "عيلة الكمال الكبيرة.jpg"),
+    feast: menuImage("Family meals", "عزومة الكمال.png"),
+  },
+  offers: {
+    falafel: menuImage("Offers", "عرض ابو الفلافل.jpg"),
+    popularBreakfast: menuImage("Offers", "عرض الفطور الشعبي.jpg"),
+    royalBreakfast: menuImage("Offers", "عرض الفطور الملكي.jpg"),
+    galayeh: menuImage("Offers", "عرض القلاية.jpg"),
+  },
 };
 
 /** Returns the supplied photo for every item stored in menuitemsphotos. */
@@ -112,6 +123,18 @@ export function getMenuItemImage(
       if (name.includes("ليمون") || name.includes("lemon")) return folderImages.drinks.lemon;
       if (name.includes("كولا") || name.includes("cola")) return folderImages.drinks.cola;
       return product.image;
+    case "family-meals":
+      if (name.includes("الكبيرة") || name.includes("large family"))
+        return folderImages.familyMeals.largeFamily;
+      if (name.includes("عزومة") || name.includes("feast")) return folderImages.familyMeals.feast;
+      return folderImages.familyMeals.family;
+    case "offers":
+      if (name.includes("الملكي") || name.includes("royal"))
+        return folderImages.offers.royalBreakfast;
+      if (name.includes("الشعبي") || name.includes("popular"))
+        return folderImages.offers.popularBreakfast;
+      if (name.includes("القلاية") || name.includes("galayeh")) return folderImages.offers.galayeh;
+      return folderImages.offers.falafel;
     default:
       return product.image;
   }
@@ -135,4 +158,6 @@ export const menuCategoryImages = {
   potatoes: menuImage("Potatoes", "علبة بطاطا.jpg"),
   "breakfast-eggs": folderImages.breakfast.scrambled,
   drinks: folderImages.drinks.orange,
+  "family-meals": folderImages.familyMeals.family,
+  offers: folderImages.offers.falafel,
 } as const;
