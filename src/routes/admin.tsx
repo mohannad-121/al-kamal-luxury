@@ -3,9 +3,9 @@ import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-r
 import {
   ArrowRight,
   ImagePlus,
-  LayoutGrid,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   SearchX,
   Trash2,
@@ -14,11 +14,10 @@ import {
 } from "lucide-react";
 import { FoodImage } from "@/components/FoodImage";
 import { AdminAccess } from "@/components/AdminAccess";
-import { MenuSectionCard } from "@/components/MenuSectionCard";
 import { Price } from "@/components/Price";
+import { websiteMenuProducts } from "@/data/admin-menu";
 import { categories } from "@/data/categories";
 import { images } from "@/data/menu";
-import { publicMenuSections, type PublicMenuSection } from "@/data/public-menu";
 import { useLang } from "@/hooks/use-lang";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useMenu } from "@/hooks/use-menu";
@@ -42,6 +41,7 @@ type ProductForm = {
 };
 
 const activeCategories = categories.filter((category) => category.active);
+const categoryById = new Map(categories.map((category) => [category.id, category]));
 
 function includesMenuQuery(value: string, query: string) {
   return value.toLocaleLowerCase().includes(query);
@@ -106,6 +106,7 @@ function Admin() {
     deleteProduct,
     refresh,
     seedStarterMenu,
+    replaceWithWebsiteMenu,
   } = useMenu();
   const { session, isAdmin, loading: authLoading } = useAdminAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -114,7 +115,8 @@ function Admin() {
   const [selectedPortion, setSelectedPortion] = useState<PortionSize | null>(null);
   const [error, setError] = useState("");
   const [menuSearch, setMenuSearch] = useState("");
-  const [menuCategory, setMenuCategory] = useState("all");
+  const [menuCategory, setMenuCategory] = useState("sandwiches");
+  const [syncingMenu, setSyncingMenu] = useState(false);
 
   useEffect(() => {
     if (isAdmin) void refresh();
@@ -125,40 +127,32 @@ function Admin() {
     () => [...products].sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
     [products],
   );
-  const visibleMenuSections = useMemo(() => {
+  const visibleProducts = useMemo(() => {
     const query = menuSearch.trim().toLocaleLowerCase();
 
-    return publicMenuSections
-      .filter((section) => menuCategory === "all" || section.id === menuCategory)
-      .map((section): PublicMenuSection | null => {
-        if (!query) return section;
-
-        if (includesMenuQuery(`${section.nameAr} ${section.nameEn}`, query)) return section;
-
-        const items = section.items.filter((item) =>
-          includesMenuQuery(
-            [
-              item.nameAr,
-              item.nameEn,
-              ...item.options.flatMap((option) => [option.nameAr, option.nameEn]),
-            ].join(" "),
-            query,
-          ),
-        );
-
-        return items.length ? { ...section, items } : null;
-      })
-      .filter((section): section is PublicMenuSection => section !== null);
-  }, [menuCategory, menuSearch]);
-  const visibleMenuItemCount = visibleMenuSections.reduce(
-    (total, section) => total + section.items.length,
-    0,
-  );
-  const visibleMenuOptionCount = visibleMenuSections.reduce(
-    (total, section) =>
-      total + section.items.reduce((subtotal, item) => subtotal + item.options.length, 0),
-    0,
-  );
+    return sortedProducts.filter((product) => {
+      if (!query) return product.categoryId === menuCategory;
+      const category = categoryById.get(product.categoryId);
+      return includesMenuQuery(
+        [
+          product.nameAr,
+          product.nameEn,
+          product.descAr,
+          product.descEn,
+          category?.nameAr ?? product.categoryId,
+          category?.nameEn ?? product.categoryId,
+        ].join(" "),
+        query,
+      );
+    });
+  }, [menuCategory, menuSearch, sortedProducts]);
+  const productCountByCategory = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const product of products) {
+      counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1);
+    }
+    return counts;
+  }, [products]);
 
   if (authLoading) {
     return (
@@ -327,6 +321,29 @@ function Admin() {
     }
   };
 
+  const syncFullWebsiteMenu = async () => {
+    const confirmed = window.confirm(
+      L(
+        `سيتم استبدال ${products.length} صنف حالي بـ ${websiteMenuProducts.length} صنف من منيو الموقع. هل تريد المتابعة؟`,
+        `Replace the current ${products.length} records with all ${websiteMenuProducts.length} website menu records?`,
+      ),
+    );
+    if (!confirmed) return;
+
+    setSyncingMenu(true);
+    setError("");
+    try {
+      await replaceWithWebsiteMenu();
+      setMenuSearch("");
+      setMenuCategory("boxes");
+      startAdd();
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : "Unable to sync the website menu.");
+    } finally {
+      setSyncingMenu(false);
+    }
+  };
+
   const selectCategory = (categoryId: string) => {
     updateField("categoryId", categoryId);
     setSelectedPortion(null);
@@ -390,168 +407,133 @@ function Admin() {
       <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">{L("المنيو الفعلي", "LIVE MENU CATALOGUE")}</p>
+            <p className="eyebrow">{L("إدارة الأصناف", "MENU MANAGEMENT")}</p>
             <h1 className="mt-2 text-3xl text-bone sm:text-4xl">
-              {L("منيو المطعم", "Restaurant menu")}
+              {L("أصناف المنيو", "Menu items")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {L(
-                "نفس الأقسام والأصناف والخيارات والأسعار الظاهرة للزبون.",
-                "The same categories, items, options, and prices shown to customers.",
+                "ابحث حسب التصنيف، ثم عدّل أو احذف الصنف المطلوب.",
+                "Choose a category, then quickly find, edit, or remove an item.",
               )}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={startAdd}
-            className="inline-flex min-h-11 items-center gap-2 bg-gold px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-gold-soft"
-          >
-            <Plus className="h-4 w-4" />
-            {L("إضافة صنف", "Add item")}
-          </button>
-        </div>
-
-        <section
-          aria-labelledby="admin-public-menu-heading"
-          className="mt-6 border border-gold/20 bg-charcoal/35 p-4 sm:p-5"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/15 pb-4">
-            <div>
-              <h2 id="admin-public-menu-heading" className="font-display text-2xl text-bone">
-                {L("المنيو المعتمد", "Customer-facing menu")}
-              </h2>
-              <p className="mt-1 text-xs text-bone/55" aria-live="polite">
-                {L(
-                  `${visibleMenuItemCount} صنف · ${visibleMenuOptionCount} خيار`,
-                  `${visibleMenuItemCount} items · ${visibleMenuOptionCount} options`,
-                )}
-              </p>
-            </div>
-            <span className="border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs text-emerald-100">
-              {L("مطابق للموقع", "Matches website")}
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)] xl:items-start">
-            <label className="flex min-h-12 items-center gap-3 border border-gold/20 bg-ink/45 px-3 text-bone/70 focus-within:border-gold">
-              <Search className="h-4 w-4 shrink-0 text-gold" />
-              <input
-                value={menuSearch}
-                onChange={(event) => setMenuSearch(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent py-3 text-sm text-bone outline-none placeholder:text-bone/40"
-                placeholder={L(
-                  "ابحث عن صنف أو حجم أو مشروب...",
-                  "Search items, sizes, or drinks...",
-                )}
-                aria-label={L("البحث في منيو الإدارة", "Search the admin menu")}
-              />
-              {menuSearch ? (
-                <button
-                  type="button"
-                  onClick={() => setMenuSearch("")}
-                  className="grid h-9 w-9 shrink-0 place-items-center text-bone/55 hover:text-gold"
-                  aria-label={L("مسح البحث", "Clear search")}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : null}
-            </label>
-
-            <div
-              className="no-scrollbar flex gap-2 overflow-x-auto pb-1"
-              role="toolbar"
-              aria-label={L("تصفية المنيو حسب التصنيف", "Filter menu by category")}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void syncFullWebsiteMenu()}
+              disabled={syncingMenu}
+              className="inline-flex min-h-11 items-center gap-2 border border-gold/35 px-4 py-2 text-sm text-gold transition-colors hover:bg-gold hover:text-ink disabled:cursor-wait disabled:opacity-60"
             >
-              <button
-                type="button"
-                aria-pressed={menuCategory === "all"}
-                onClick={() => setMenuCategory("all")}
-                className={`inline-flex min-h-12 shrink-0 items-center gap-2 border px-3 text-sm transition-colors ${
-                  menuCategory === "all"
-                    ? "border-gold bg-gold text-ink"
-                    : "border-gold/20 text-bone/70 hover:border-gold hover:text-gold"
-                }`}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                {L("الكل", "All")}
-              </button>
-              {publicMenuSections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  aria-pressed={menuCategory === section.id}
-                  onClick={() => setMenuCategory(section.id)}
-                  className={`min-h-12 shrink-0 border px-3 text-sm transition-colors ${
-                    menuCategory === section.id
-                      ? "border-gold bg-gold text-ink"
-                      : "border-gold/20 text-bone/70 hover:border-gold hover:text-gold"
-                  }`}
-                >
-                  {L(section.nameAr, section.nameEn)}
-                </button>
-              ))}
-            </div>
+              <RefreshCw className={`h-4 w-4 ${syncingMenu ? "animate-spin" : ""}`} />
+              {syncingMenu
+                ? L("جارٍ نقل كل المنيو...", "Syncing full menu...")
+                : L(
+                    `استبدال القائمة بكل المنيو (${websiteMenuProducts.length})`,
+                    `Replace with full menu (${websiteMenuProducts.length})`,
+                  )}
+            </button>
+            <button
+              type="button"
+              onClick={startAdd}
+              className="inline-flex min-h-11 items-center gap-2 bg-gold px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-gold-soft"
+            >
+              <Plus className="h-4 w-4" />
+              {L("إضافة صنف", "Add item")}
+            </button>
           </div>
-
-          {visibleMenuSections.length ? (
-            <div className="mt-5 grid gap-5 2xl:grid-cols-2">
-              {visibleMenuSections.map((section, index) => (
-                <MenuSectionCard key={section.id} section={section} eager={index < 2} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid min-h-56 place-items-center border border-dashed border-gold/20 bg-ink/30 p-8 text-center">
-              <div>
-                <SearchX className="mx-auto h-7 w-7 text-gold" />
-                <p className="mt-3 text-bone">
-                  {L("لا توجد أصناف مطابقة.", "No matching menu items.")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuSearch("");
-                    setMenuCategory("all");
-                  }}
-                  className="mt-4 text-sm text-gold hover:text-gold-soft"
-                >
-                  {L("عرض كل المنيو", "Show the full menu")}
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <div className="mt-10 border-b border-gold/15 pb-4">
-          <p className="eyebrow">{L("إدارة بيانات الأصناف", "DATABASE MENU MANAGEMENT")}</p>
-          <h2 className="mt-1 text-2xl text-bone">{L("تحرير الأصناف", "Edit menu records")}</h2>
         </div>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
           <div className="order-2 xl:order-1">
             <div className="border border-gold/20 bg-charcoal/35">
-              <div className="flex items-center justify-between border-b border-gold/15 p-5">
-                <div>
-                  <p className="eyebrow">{L("كل الأصناف", "ALL ITEMS")}</p>
-                  <h2 className="mt-1 text-2xl text-bone">{products.length}</h2>
+              <div className="border-b border-gold/15 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="eyebrow">
+                      {menuSearch
+                        ? L("نتائج البحث", "SEARCH RESULTS")
+                        : L(
+                            categoryById.get(menuCategory)?.nameAr ?? "الأصناف",
+                            categoryById.get(menuCategory)?.nameEn ?? "ITEMS",
+                          )}
+                    </p>
+                    <h2 className="mt-1 text-2xl text-bone">
+                      {visibleProducts.length}
+                      <span className="ms-2 text-sm font-normal text-bone/45">
+                        {L(`من ${products.length}`, `of ${products.length}`)}
+                      </span>
+                    </h2>
+                  </div>
+                  <label className="flex min-h-11 w-full items-center gap-2 border border-gold/20 bg-ink/45 px-3 text-bone/70 focus-within:border-gold sm:w-72">
+                    <Search className="h-4 w-4 shrink-0 text-gold" />
+                    <input
+                      value={menuSearch}
+                      onChange={(event) => setMenuSearch(event.target.value)}
+                      className="min-w-0 flex-1 bg-transparent py-2 text-sm text-bone outline-none placeholder:text-bone/40"
+                      placeholder={L("ابحث عن صنف...", "Search menu items...")}
+                      aria-label={L("البحث في الأصناف", "Search menu items")}
+                    />
+                    {menuSearch ? (
+                      <button
+                        type="button"
+                        onClick={() => setMenuSearch("")}
+                        className="grid h-8 w-8 place-items-center text-bone/55 hover:text-gold"
+                        aria-label={L("مسح البحث", "Clear search")}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </label>
                 </div>
               </div>
-              <div className="divide-y divide-gold/10">
-                {sortedProducts.map((product) => {
-                  const category = categories.find((item) => item.id === product.categoryId);
+
+              <div
+                className="grid grid-cols-2 gap-2 border-b border-gold/15 p-3 sm:grid-cols-4 2xl:grid-cols-8"
+                role="toolbar"
+                aria-label={L("تصفية الأصناف حسب التصنيف", "Filter items by category")}
+              >
+                {activeCategories.map((category) => {
+                  const count = productCountByCategory.get(category.id) ?? 0;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      aria-pressed={!menuSearch && menuCategory === category.id}
+                      onClick={() => {
+                        setMenuCategory(category.id);
+                        setMenuSearch("");
+                      }}
+                      className={`min-h-12 border px-2 py-2 text-xs transition-colors ${
+                        !menuSearch && menuCategory === category.id
+                          ? "border-gold bg-gold text-ink"
+                          : "border-gold/20 text-bone/70 hover:border-gold hover:text-gold"
+                      }`}
+                    >
+                      <span className="block">{L(category.nameAr, category.nameEn)}</span>
+                      <span className="mt-0.5 block opacity-65">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-px bg-gold/10 p-px md:grid-cols-2">
+                {visibleProducts.map((product) => {
+                  const category = categoryById.get(product.categoryId);
                   return (
                     <article
                       key={product.id}
-                      className="grid gap-4 p-4 sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] sm:items-center sm:p-5"
+                      className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 bg-charcoal p-3 sm:p-4"
                     >
                       <FoodImage
                         src={product.image}
                         alt={L(product.nameAr, product.nameEn)}
-                        className="h-24 w-full sm:h-20 sm:w-20"
+                        className="h-[4.5rem] w-[4.5rem]"
                         zoom={false}
                       />
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-xl text-bone">
+                          <h3 className="font-display text-base leading-6 text-bone">
                             {L(product.nameAr, product.nameEn)}
                           </h3>
                           <span className="border border-gold/20 px-2 py-0.5 text-[0.65rem] text-gold">
@@ -563,49 +545,60 @@ function Admin() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+                        <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                           {L(product.descAr, product.descEn)}
                         </p>
-                        <p className="mt-2 text-gold">
-                          <Price value={product.price - (product.discount ?? 0)} />
-                        </p>
-                      </div>
-                      <div className="flex gap-2 sm:justify-end">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(product)}
-                          className="grid h-11 w-11 place-items-center border border-gold/25 text-gold hover:border-gold"
-                          aria-label={L(`تعديل ${product.nameAr}`, `Edit ${product.nameEn}`)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void removeProduct(product)}
-                          className="grid h-11 w-11 place-items-center border border-red-300/25 text-red-200 hover:border-red-300"
-                          aria-label={L(`حذف ${product.nameAr}`, `Delete ${product.nameEn}`)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <p className="text-sm text-gold">
+                            {product.price > 0 ? (
+                              <Price value={product.price - (product.discount ?? 0)} />
+                            ) : (
+                              <span className="text-xs text-amber-200">
+                                {L("السعر غير محدد", "Price not set")}
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(product)}
+                              className="grid h-9 w-9 place-items-center border border-gold/25 text-gold hover:border-gold"
+                              aria-label={L(`تعديل ${product.nameAr}`, `Edit ${product.nameEn}`)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void removeProduct(product)}
+                              className="grid h-9 w-9 place-items-center border border-red-300/25 text-red-200 hover:border-red-300"
+                              aria-label={L(`حذف ${product.nameAr}`, `Delete ${product.nameEn}`)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </article>
                   );
                 })}
               </div>
-              {!products.length ? (
+              {!visibleProducts.length ? (
                 <div className="p-12 text-center text-muted-foreground">
+                  <SearchX className="mx-auto mb-3 h-7 w-7 text-gold" />
                   {L(
-                    "لا توجد أصناف بعد. أضف أول صنف من النموذج.",
-                    "There are no items yet. Add your first item using the form.",
+                    menuSearch ? "لا توجد نتائج مطابقة." : "لا توجد أصناف في هذا التصنيف.",
+                    menuSearch ? "No matching items." : "There are no items in this category.",
                   )}
-                  <button
-                    type="button"
-                    onClick={() => void importStarterMenu()}
-                    className="mx-auto mt-5 inline-flex min-h-11 items-center gap-2 border border-gold/35 px-4 text-sm text-gold hover:bg-gold hover:text-ink"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {L("استيراد المنيو الحالي", "Import current starter menu")}
-                  </button>
+                  {!products.length ? (
+                    <button
+                      type="button"
+                      onClick={() => void importStarterMenu()}
+                      className="mx-auto mt-5 inline-flex min-h-11 items-center gap-2 border border-gold/35 px-4 text-sm text-gold hover:bg-gold hover:text-ink"
+                    >
+                      <Plus className="h-4 w-4" />
+                      {L("استيراد كل منيو الموقع", "Import the full website menu")}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>

@@ -7,8 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { defaultRecipes, ingredientDefinitions } from "@/data/inventory";
-import { hiddenProductIds, products as defaultProducts } from "@/data/menu";
+import { websiteMenuCategories, websiteMenuProducts } from "@/data/admin-menu";
 import { supabase } from "@/lib/supabase";
 import type { IngredientDefinition, Product } from "@/types";
 
@@ -24,6 +23,7 @@ interface MenuContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   seedStarterMenu: () => Promise<void>;
+  replaceWithWebsiteMenu: () => Promise<void>;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -55,9 +55,7 @@ type MenuRow = {
   menu_item_ingredients: RecipeRow[] | null;
 };
 
-const starterProducts = defaultProducts
-  .filter((product) => !hiddenProductIds.has(product.id))
-  .map((product) => ({ ...product, recipe: defaultRecipes[product.id] ?? [] }));
+const starterProducts = websiteMenuProducts;
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
@@ -238,34 +236,38 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
-  const seedStarterMenu = useCallback(async () => {
-    const { count, error: countError } = await supabase
-      .from("menu_items")
-      .select("id", { count: "exact", head: true });
-    if (countError) throw new Error(countError.message);
-    if ((count ?? 0) > 0) {
-      await refresh();
-      return;
-    }
+  const replaceWithWebsiteMenu = useCallback(async () => {
+    setError(null);
 
-    const { error: ingredientInsertError } = await supabase.from("ingredients").insert(
-      ingredientDefinitions.map((ingredient) => ({
-        name_ar: ingredient.nameAr,
-        name_en: ingredient.nameEn,
-        unit: ingredient.unit,
-        available_quantity: ingredient.initialQuantity,
-        low_stock_threshold: ingredient.lowStockThreshold,
-      })),
-    );
-    if (ingredientInsertError) throw new Error(ingredientInsertError.message);
+    const [currentItemsResult, categorySyncResult] = await Promise.all([
+      supabase.from("menu_items").select("id").eq("is_archived", false),
+      supabase
+        .from("menu_categories")
+        .upsert(
+          websiteMenuCategories.map((category) => ({
+            slug: category.id,
+            name_ar: category.nameAr,
+            name_en: category.nameEn,
+            image_url: category.image,
+            display_order: category.order,
+            is_active: true,
+          })),
+          { onConflict: "slug" },
+        )
+        .select("id, slug"),
+    ]);
+    const { data: currentItems, error: currentItemsError } = currentItemsResult;
+    if (currentItemsError) throw new Error(currentItemsError.message);
+    const { data: syncedCategories, error: categorySyncError } = categorySyncResult;
+    if (categorySyncError) throw new Error(categorySyncError.message);
 
-    const { data: freshCategories, error: freshCategoryError } = await supabase
-      .from("menu_categories")
-      .select("id, slug");
-    if (freshCategoryError) throw new Error(freshCategoryError.message);
     const categoryMap = new Map(
-      (freshCategories ?? []).map((category) => [category.slug, category.id]),
+      (syncedCategories ?? []).map((category) => [category.slug, category.id]),
     );
+    const missingCategory = websiteMenuCategories.find((category) => !categoryMap.has(category.id));
+    if (missingCategory) {
+      throw new Error(`Unable to sync the ${missingCategory.nameEn} category.`);
+    }
 
     const { data: insertedProducts, error: productInsertError } = await supabase
       .from("menu_items")
@@ -284,35 +286,32 @@ export function MenuProvider({ children }: { children: ReactNode }) {
           is_featured: Boolean(product.featured),
         })),
       )
-      .select("id, name_en");
+      .select("id");
     if (productInsertError) throw new Error(productInsertError.message);
 
-    const { data: freshIngredients, error: freshIngredientError } = await supabase
-      .from("ingredients")
-      .select("id, name_en");
-    if (freshIngredientError) throw new Error(freshIngredientError.message);
-    const ingredientMap = new Map(
-      (freshIngredients ?? []).map((ingredient) => [
-        ingredientDefinitions.find((definition) => definition.nameEn === ingredient.name_en)?.id,
-        ingredient.id,
-      ]),
-    );
-    const productMap = new Map(
-      (insertedProducts ?? []).map((product) => [product.name_en, product.id]),
-    );
-    const recipes = starterProducts.flatMap((product) =>
-      (product.recipe ?? []).map((ingredient) => ({
-        menu_item_id: productMap.get(product.nameEn),
-        ingredient_id: ingredientMap.get(ingredient.ingredientId),
-        quantity_per_item: ingredient.quantity,
-      })),
-    );
-    const { error: recipeInsertError } = await supabase
-      .from("menu_item_ingredients")
-      .insert(recipes);
-    if (recipeInsertError) throw new Error(recipeInsertError.message);
+    const oldItemIds = (currentItems ?? []).map((item) => item.id);
+    if (oldItemIds.length) {
+      const { error: archiveError } = await supabase
+        .from("menu_items")
+        .update({ is_archived: true, is_available: false })
+        .in("id", oldItemIds);
+
+      if (archiveError) {
+        const insertedIds = (insertedProducts ?? []).map((item) => item.id);
+        if (insertedIds.length) {
+          await supabase
+            .from("menu_items")
+            .update({ is_archived: true, is_available: false })
+            .in("id", insertedIds);
+        }
+        throw new Error(archiveError.message);
+      }
+    }
+
     await refresh();
   }, [refresh]);
+
+  const seedStarterMenu = replaceWithWebsiteMenu;
 
   const value = useMemo(
     () => ({
@@ -322,6 +321,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       seedStarterMenu,
+      replaceWithWebsiteMenu,
       addProduct,
       updateProduct,
       deleteProduct,
@@ -334,6 +334,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       loading,
       products,
       refresh,
+      replaceWithWebsiteMenu,
       seedStarterMenu,
       updateProduct,
     ],
