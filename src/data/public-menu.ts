@@ -126,7 +126,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "boxes",
     nameAr: "العلب",
     nameEn: "Takeaway Boxes",
-    image: "/images/levantine-bowls-premium.jpg",
+    image: menuCategoryImages.boxes,
     imagePosition: "50% 54%",
     items: boxItems,
   },
@@ -134,7 +134,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "plates",
     nameAr: "الصحون",
     nameEn: "Plates",
-    image: "/images/levantine-bowls-premium.jpg",
+    image: menuCategoryImages.plates,
     imagePosition: "50% 62%",
     items: plateItems,
   },
@@ -142,7 +142,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "fatteh",
     nameAr: "الفتّة",
     nameEn: "Fatteh",
-    image: "/images/fatteh-premium.jpg",
+    image: menuCategoryImages.fatteh,
     imagePosition: "50% 54%",
     items: [
       {
@@ -158,7 +158,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "sandwiches",
     nameAr: "الساندويشات",
     nameEn: "Sandwiches",
-    image: "/images/falafel-wrap.jpg",
+    image: menuCategoryImages.sandwiches,
     imagePosition: "50% 50%",
     items: [
       {
@@ -238,7 +238,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "falafel",
     nameAr: "الفلافل",
     nameEn: "Falafel",
-    image: "/images/falafel.jpg",
+    image: menuCategoryImages.falafel,
     imagePosition: "50% 46%",
     items: [
       {
@@ -270,7 +270,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "potatoes",
     nameAr: "البطاطا",
     nameEn: "Potatoes",
-    image: "/images/potato-box-premium.jpg",
+    image: menuCategoryImages.potatoes,
     imagePosition: "50% 54%",
     items: [
       {
@@ -286,7 +286,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "breakfast-eggs",
     nameAr: "الفطور والبيض",
     nameEn: "Breakfast & Eggs",
-    image: "/images/breakfast-skillets-premium.jpg",
+    image: menuCategoryImages["breakfast-eggs"],
     imagePosition: "50% 52%",
     items: [
       ...breakfastSandwichItems,
@@ -303,7 +303,7 @@ export const publicMenuSections: PublicMenuSection[] = [
     id: "drinks",
     nameAr: "المشروبات",
     nameEn: "Drinks",
-    image: "/images/matrix-drinks-premium-v2.jpg",
+    image: menuCategoryImages.drinks,
     imagePosition: "50% 50%",
     items: [
       {
@@ -373,3 +373,4 @@ export function getPublicMenuItem(itemId: string) {
 
   return undefined;
 }
+import { menuCategoryImages } from "./menu-item-images";

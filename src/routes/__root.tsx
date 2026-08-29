@@ -4,13 +4,14 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
-  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { type ReactNode } from "react";
 import { LangProvider, useLang } from "@/hooks/use-lang";
 import { MenuProvider } from "@/hooks/use-menu";
+import { CartProvider } from "@/hooks/use-cart";
+import { ProductSheetProvider } from "@/hooks/use-product-sheet";
 import { DailySalesProvider } from "@/hooks/use-daily-sales";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import kamalLogo from "../../logo/kamal.jpg";
@@ -139,7 +140,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const content = (
     <>
       <Outlet />
@@ -149,13 +149,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {pathname.startsWith("/admin") ? (
+      <CartProvider>
         <MenuProvider>
-          <DailySalesProvider>{content}</DailySalesProvider>
+          <ProductSheetProvider>
+            <DailySalesProvider>{content}</DailySalesProvider>
+          </ProductSheetProvider>
         </MenuProvider>
-      ) : (
-        content
-      )}
+      </CartProvider>
     </QueryClientProvider>
   );
 }

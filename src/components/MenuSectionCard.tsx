@@ -1,7 +1,8 @@
-import { useId, useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
 import { type PublicMenuSection } from "@/data/public-menu";
+import { getMenuItemPhoto } from "@/data/menu-item-images";
 import { useLang } from "@/hooks/use-lang";
 import { cn } from "@/lib/utils";
 
@@ -9,15 +10,22 @@ export interface MenuSectionCardProps {
   section: PublicMenuSection;
   className?: string;
   eager?: boolean;
+  availabilityByOptionLabel?: ReadonlyMap<string, boolean>;
 }
 
 /** Editorial section image followed by a compact, scannable price list. */
-export function MenuSectionCard({ section, className, eager = false }: MenuSectionCardProps) {
+export function MenuSectionCard({
+  section,
+  className,
+  eager = false,
+  availabilityByOptionLabel,
+}: MenuSectionCardProps) {
   const { lang, L } = useLang();
   const generatedId = useId().replaceAll(":", "");
   const headingId = `menu-section-${section.id}-${generatedId}`;
   const summaryId = `${headingId}-summary`;
   const sectionName = L(section.nameAr, section.nameEn);
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
   const optionCount = section.items.reduce((total, item) => total + item.options.length, 0);
   const quantityNumber = useMemo(
     () => new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-JO"),
@@ -75,59 +83,95 @@ export function MenuSectionCard({ section, className, eager = false }: MenuSecti
         aria-label={L(`أصناف ${section.nameAr}`, `${section.nameEn} items`)}
         className={cn("grid gap-px bg-gold/10 p-px", section.items.length > 3 && "md:grid-cols-2")}
       >
-        {section.items.map((item) => (
-          <li
-            key={item.id}
-            className={cn(
-              "group/dish relative bg-[oklch(0.165_0.005_60)] px-4 py-5 transition-colors duration-300 hover:bg-[oklch(0.185_0.007_60)] motion-reduce:transition-none sm:px-5 sm:py-6",
-              item.featured &&
-                "bg-[linear-gradient(145deg,oklch(0.19_0.009_70),oklch(0.155_0.004_60))]",
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-0 start-0 w-px origin-center scale-y-0 bg-gold/80 transition-transform duration-300 group-hover/dish:scale-y-100 motion-reduce:transition-none"
-            />
+        {section.items.map((item) => {
+          const isOpen = openItemId === item.id;
+          const image = getMenuItemPhoto(section.id, item.nameAr, item.nameEn, section.image);
 
-            <div className="flex min-h-8 items-start gap-3">
-              <h3 className="min-w-0 flex-1 font-display text-[1.05rem] leading-7 text-cream sm:text-lg">
-                {L(item.nameAr, item.nameEn)}
-              </h3>
-              {item.featured ? (
-                <span className="inline-flex shrink-0 items-center gap-1.5 pt-1 text-[0.6rem] font-medium text-gold">
-                  <span aria-hidden="true" className="h-1 w-1 rotate-45 bg-gold" />
-                  {L("مميّز", "Featured")}
-                </span>
-              ) : null}
-            </div>
-
-            <ul
-              aria-label={L(`خيارات ${item.nameAr}`, `${item.nameEn} options`)}
-              className="mt-3 border-t border-bone/[0.07]"
+          return (
+            <li
+              key={item.id}
+              className={cn(
+                "group/dish relative bg-[oklch(0.165_0.005_60)] px-4 py-5 transition-colors duration-300 hover:bg-[oklch(0.185_0.007_60)] motion-reduce:transition-none sm:px-5 sm:py-6",
+                item.featured &&
+                  "bg-[linear-gradient(145deg,oklch(0.19_0.009_70),oklch(0.155_0.004_60))]",
+              )}
             >
-              {item.options.map((option) => (
-                <li
-                  key={option.id}
-                  className="group/option grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-bone/[0.055] py-2.5 last:border-b-0"
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 start-0 w-px origin-center scale-y-0 bg-gold/80 transition-transform duration-300 group-hover/dish:scale-y-100 motion-reduce:transition-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => setOpenItemId((current) => (current === item.id ? null : item.id))}
+                aria-expanded={isOpen}
+                className="flex w-full items-center gap-3 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              >
+                <FoodImage
+                  src={image}
+                  alt={L(item.nameAr, item.nameEn)}
+                  className="h-16 w-16 shrink-0 border border-gold/15"
+                  zoom={false}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[1.05rem] leading-7 text-cream sm:text-lg">
+                    {L(item.nameAr, item.nameEn)}
+                  </span>
+                  <span className="mt-1 block text-xs text-gold/75">
+                    {isOpen
+                      ? L("إخفاء التفاصيل", "Hide details")
+                      : L("اضغط لعرض التفاصيل", "Tap to view details")}
+                  </span>
+                </span>
+                {item.featured ? (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-[0.6rem] font-medium text-gold">
+                    <span aria-hidden="true" className="h-1 w-1 rotate-45 bg-gold" />
+                    {L("مميّز", "Featured")}
+                  </span>
+                ) : null}
+              </button>
+
+              {isOpen ? (
+                <ul
+                  aria-label={L(`خيارات ${item.nameAr}`, `${item.nameEn} options`)}
+                  className="mt-3 border-t border-bone/[0.07]"
                 >
-                  <span className="min-w-0 text-sm leading-6 text-bone/75 transition-colors duration-300 group-hover/option:text-bone motion-reduce:transition-none">
-                    {L(option.nameAr, option.nameEn)}
-                  </span>
-                  <span className="inline-flex min-w-[4.75rem] items-center justify-end border-s border-gold/10 ps-3 text-sm text-gold transition-colors duration-300 group-hover/option:text-gold-soft motion-reduce:transition-none">
-                    {option.price !== undefined ? (
-                      <Price value={option.price} className="font-semibold" />
-                    ) : (
-                      <span className="inline-flex items-center gap-2 font-semibold">
-                        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
-                        {L("متوفرة", "Available")}
-                      </span>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
+                  {item.options.map((option) => {
+                    const available =
+                      availabilityByOptionLabel?.get(`${item.nameAr} — ${option.nameAr}`) ?? true;
+                    return (
+                      <li
+                        key={option.id}
+                        className="group/option grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-bone/[0.055] py-2.5 last:border-b-0"
+                      >
+                        <span className="min-w-0 text-sm leading-6 text-bone/75 transition-colors duration-300 group-hover/option:text-bone motion-reduce:transition-none">
+                          {L(option.nameAr, option.nameEn)}
+                        </span>
+                        <span className="inline-flex min-w-[4.75rem] items-center justify-end border-s border-gold/10 ps-3 text-sm text-gold transition-colors duration-300 group-hover/option:text-gold-soft motion-reduce:transition-none">
+                          {!available ? (
+                            <span className="border border-bone/25 px-2 py-1 text-[0.6rem] tracking-[0.12em] text-bone/70">
+                              {L("غير متوفر", "NOT AVAILABLE")}
+                            </span>
+                          ) : option.price !== undefined ? (
+                            <Price value={option.price} className="font-semibold" />
+                          ) : (
+                            <span className="inline-flex items-center gap-2 font-semibold">
+                              <span
+                                aria-hidden="true"
+                                className="h-1.5 w-1.5 rounded-full bg-gold"
+                              />
+                              {L("متوفرة", "Available")}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
       </ol>
     </article>
   );

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { websiteMenuCategories, websiteMenuProducts } from "@/data/admin-menu";
+import { getMenuItemImage } from "@/data/menu-item-images";
 import { supabase } from "@/lib/supabase";
 import type { IngredientDefinition, Product } from "@/types";
 
@@ -26,6 +27,7 @@ interface MenuContextValue {
   replaceWithWebsiteMenu: () => Promise<void>;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
+  setProductAvailability: (id: string, available: boolean) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
 }
 
@@ -72,7 +74,12 @@ function productFromRow(row: MenuRow): Product {
     descEn: row.description_en ?? row.name_en,
     price: Number(row.price),
     discount: Number(row.discount ?? 0) || undefined,
-    image: row.image_url,
+    image: getMenuItemImage({
+      categoryId: category?.slug ?? "",
+      nameAr: row.name_ar,
+      nameEn: row.name_en,
+      image: row.image_url,
+    }),
     available: row.is_available,
     popular: row.is_popular,
     featured: row.is_featured,
@@ -224,6 +231,18 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     [categoryRows, refresh, saveRecipe],
   );
 
+  const setProductAvailability = useCallback(
+    async (id: string, available: boolean) => {
+      const { error: updateError } = await supabase
+        .from("menu_items")
+        .update({ is_available: available })
+        .eq("id", id);
+      if (updateError) throw new Error(updateError.message);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const deleteProduct = useCallback(
     async (id: string) => {
       const { error: deleteError } = await supabase
@@ -324,6 +343,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       replaceWithWebsiteMenu,
       addProduct,
       updateProduct,
+      setProductAvailability,
       deleteProduct,
     }),
     [
@@ -337,6 +357,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       replaceWithWebsiteMenu,
       seedStarterMenu,
       updateProduct,
+      setProductAvailability,
     ],
   );
 

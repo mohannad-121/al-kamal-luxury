@@ -1,6 +1,7 @@
 import { FoodImage } from "./FoodImage";
 import { Price } from "./Price";
 import { useLang } from "@/hooks/use-lang";
+import { useProductSheet } from "@/hooks/use-product-sheet";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -12,6 +13,7 @@ interface Props {
 
 export function ProductCard({ product, layout = "tall", className }: Props) {
   const { L } = useLang();
+  const { openProduct } = useProductSheet();
   const price = product.price - (product.discount ?? 0);
 
   const badge = (
@@ -23,7 +25,7 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
       ) : null}
       {!product.available ? (
         <span className="border border-bone/30 bg-ink/80 px-2.5 py-1 text-[0.62rem] tracking-[0.16em] text-bone/70 backdrop-blur">
-          {L("غير متوفر", "SOLD OUT")}
+          {L("غير متوفر", "NOT AVAILABLE")}
         </span>
       ) : null}
     </>
@@ -31,9 +33,12 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
 
   if (layout === "wide") {
     return (
-      <article
+      <button
+        type="button"
+        onClick={() => openProduct(product)}
+        aria-label={L(`عرض ${product.nameAr}`, `View ${product.nameEn}`)}
         className={cn(
-          "flex w-full items-stretch gap-4 border border-border bg-charcoal/40 p-3 text-start",
+          "flex w-full items-stretch gap-4 border border-border bg-charcoal/40 p-3 text-start transition-colors hover:border-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
           className,
         )}
       >
@@ -56,15 +61,18 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
             <Price value={price} />
           </span>
         </span>
-      </article>
+      </button>
     );
   }
 
   if (layout === "feature") {
     return (
-      <article
+      <button
+        type="button"
+        onClick={() => openProduct(product)}
+        aria-label={L(`عرض ${product.nameAr}`, `View ${product.nameEn}`)}
         className={cn(
-          "relative block w-full overflow-hidden border border-gold/20 text-start",
+          "relative block w-full overflow-hidden border border-gold/20 text-start transition-colors hover:border-gold/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
           className,
         )}
       >
@@ -88,14 +96,17 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
             </span>
           </span>
         </span>
-      </article>
+      </button>
     );
   }
 
   return (
-    <article
+    <button
+      type="button"
+      onClick={() => openProduct(product)}
+      aria-label={L(`عرض ${product.nameAr}`, `View ${product.nameEn}`)}
       className={cn(
-        "flex w-full flex-row border border-border bg-charcoal/40 p-3 text-start sm:flex-col sm:p-0",
+        "group flex w-full flex-row border border-border bg-charcoal/40 p-3 text-start transition-colors hover:border-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold sm:flex-col sm:p-0",
         className,
       )}
     >
@@ -125,6 +136,6 @@ export function ProductCard({ product, layout = "tall", className }: Props) {
           </span>
         </span>
       </span>
-    </article>
+    </button>
   );
 }

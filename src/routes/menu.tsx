@@ -12,6 +12,7 @@ import {
   type PublicMenuSection,
 } from "@/data/public-menu";
 import { useLang } from "@/hooks/use-lang";
+import { useMenu } from "@/hooks/use-menu";
 
 const validCategoryIds = new Set(["all", ...publicMenuSections.map((section) => section.id)]);
 
@@ -29,6 +30,7 @@ function includesQuery(value: string, query: string) {
 
 function Menu() {
   const { L, lang } = useLang();
+  const { products } = useMenu();
   const { category: initialCategory } = Route.useSearch();
   const [active, setActive] = useState(initialCategory);
   const [term, setTerm] = useState("");
@@ -67,6 +69,10 @@ function Menu() {
     0,
   );
   const number = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-JO"), [lang]);
+  const availabilityByOptionLabel = useMemo(
+    () => new Map(products.map((product) => [product.nameAr, product.available])),
+    [products],
+  );
 
   return (
     <main className="bg-ink">
@@ -234,7 +240,11 @@ function Menu() {
                   delay={(index % 4) * 70}
                   className="mb-5 break-inside-avoid sm:mb-7"
                 >
-                  <MenuSectionCard section={section} eager={index < 2} />
+                  <MenuSectionCard
+                    section={section}
+                    eager={index < 2}
+                    availabilityByOptionLabel={availabilityByOptionLabel}
+                  />
                 </Reveal>
               ))}
             </div>

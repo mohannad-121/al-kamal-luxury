@@ -5,6 +5,7 @@ import {
   ImagePlus,
   Pencil,
   Plus,
+  Power,
   RefreshCw,
   Search,
   SearchX,
@@ -103,6 +104,7 @@ function Admin() {
     ingredients,
     addProduct,
     updateProduct,
+    setProductAvailability,
     deleteProduct,
     refresh,
     seedStarterMenu,
@@ -307,6 +309,18 @@ function Admin() {
           deleteError instanceof Error ? deleteError.message : "Unable to delete this menu item.",
         );
       }
+    }
+  };
+
+  const toggleAvailability = async (product: Product) => {
+    try {
+      await setProductAvailability(product.id, !product.available);
+    } catch (availabilityError) {
+      setError(
+        availabilityError instanceof Error
+          ? availabilityError.message
+          : "Unable to update availability.",
+      );
     }
   };
 
@@ -559,6 +573,20 @@ function Admin() {
                             )}
                           </p>
                           <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void toggleAvailability(product)}
+                              className={`inline-flex h-9 items-center gap-1.5 border px-2 text-[0.65rem] font-medium transition-colors ${product.available ? "border-emerald-300/40 text-emerald-200 hover:border-emerald-300 hover:bg-emerald-300/10" : "border-bone/25 text-bone/70 hover:border-gold hover:text-gold"}`}
+                              aria-label={L(
+                                `تعيين ${product.nameAr} ${product.available ? "غير متوفر" : "متوفر"}`,
+                                `Mark ${product.nameEn} as ${product.available ? "not available" : "available"}`,
+                              )}
+                            >
+                              <Power className="h-3.5 w-3.5" />
+                              {product.available
+                                ? L("متوفر", "Available")
+                                : L("غير متوفر", "Not available")}
+                            </button>
                             <button
                               type="button"
                               onClick={() => startEdit(product)}
