@@ -119,6 +119,8 @@ function Admin() {
   const [menuSearch, setMenuSearch] = useState("");
   const [menuCategory, setMenuCategory] = useState("sandwiches");
   const [syncingMenu, setSyncingMenu] = useState(false);
+  const [availabilitySavingId, setAvailabilitySavingId] = useState<string | null>(null);
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
 
   useEffect(() => {
     if (isAdmin) void refresh();
@@ -313,14 +315,26 @@ function Admin() {
   };
 
   const toggleAvailability = async (product: Product) => {
+    const nextAvailability = !product.available;
+    setAvailabilitySavingId(product.id);
+    setAvailabilityMessage("");
+    setError("");
     try {
-      await setProductAvailability(product.id, !product.available);
+      await setProductAvailability(product.id, nextAvailability);
+      setAvailabilityMessage(
+        L(
+          `${product.nameAr} أصبح ${nextAvailability ? "متوفراً" : "غير متوفر"}.`,
+          `${product.nameEn} is now ${nextAvailability ? "available" : "not available"}.`,
+        ),
+      );
     } catch (availabilityError) {
       setError(
         availabilityError instanceof Error
           ? availabilityError.message
           : "Unable to update availability.",
       );
+    } finally {
+      setAvailabilitySavingId(null);
     }
   };
 
@@ -458,6 +472,21 @@ function Admin() {
           </div>
         </div>
 
+        {error || availabilityMessage ? (
+          <div className="mt-5" aria-live="polite">
+            {error ? (
+              <p className="border border-red-300/30 bg-red-300/10 p-3 text-sm text-red-100">
+                {error}
+              </p>
+            ) : null}
+            {availabilityMessage ? (
+              <p className="border border-emerald-300/30 bg-emerald-300/10 p-3 text-sm text-emerald-100">
+                {availabilityMessage}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
           <div className="order-2 xl:order-1">
             <div className="border border-gold/20 bg-charcoal/35">
@@ -576,16 +605,19 @@ function Admin() {
                             <button
                               type="button"
                               onClick={() => void toggleAvailability(product)}
-                              className={`inline-flex h-9 items-center gap-1.5 border px-2 text-[0.65rem] font-medium transition-colors ${product.available ? "border-emerald-300/40 text-emerald-200 hover:border-emerald-300 hover:bg-emerald-300/10" : "border-bone/25 text-bone/70 hover:border-gold hover:text-gold"}`}
+                              disabled={availabilitySavingId === product.id}
+                              className={`inline-flex h-9 items-center gap-1.5 border px-2 text-[0.65rem] font-medium transition-colors disabled:cursor-wait disabled:opacity-60 ${product.available ? "border-emerald-300/40 text-emerald-200 hover:border-emerald-300 hover:bg-emerald-300/10" : "border-bone/25 text-bone/70 hover:border-gold hover:text-gold"}`}
                               aria-label={L(
                                 `تعيين ${product.nameAr} ${product.available ? "غير متوفر" : "متوفر"}`,
                                 `Mark ${product.nameEn} as ${product.available ? "not available" : "available"}`,
                               )}
                             >
                               <Power className="h-3.5 w-3.5" />
-                              {product.available
-                                ? L("متوفر", "Available")
-                                : L("غير متوفر", "Not available")}
+                              {availabilitySavingId === product.id
+                                ? L("جارٍ الحفظ...", "Saving...")
+                                : product.available
+                                  ? L("متوفر", "Available")
+                                  : L("غير متوفر", "Not available")}
                             </button>
                             <button
                               type="button"

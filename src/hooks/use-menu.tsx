@@ -233,11 +233,24 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
   const setProductAvailability = useCallback(
     async (id: string, available: boolean) => {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from("menu_items")
         .update({ is_available: available })
-        .eq("id", id);
+        .eq("id", id)
+        .select("id, is_available")
+        .maybeSingle();
       if (updateError) throw new Error(updateError.message);
+      if (!data) {
+        throw new Error(
+          "Availability was not saved. Your admin account needs permission to update this menu item.",
+        );
+      }
+      if (data.is_available !== available) {
+        throw new Error("Availability was not saved. Please try again.");
+      }
+      setProducts((current) =>
+        current.map((product) => (product.id === id ? { ...product, available } : product)),
+      );
       await refresh();
     },
     [refresh],

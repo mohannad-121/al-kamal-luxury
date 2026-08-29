@@ -10,7 +10,11 @@ export interface MenuSectionCardProps {
   section: PublicMenuSection;
   className?: string;
   eager?: boolean;
-  availabilityByOptionLabel?: ReadonlyMap<string, boolean>;
+  availabilityByOptionKey?: ReadonlyMap<string, boolean>;
+}
+
+function optionAvailabilityKey(categoryId: string, itemNameAr: string, optionNameAr: string) {
+  return `${categoryId}::${itemNameAr} — ${optionNameAr}`;
 }
 
 /** Editorial section image followed by a compact, scannable price list. */
@@ -18,7 +22,7 @@ export function MenuSectionCard({
   section,
   className,
   eager = false,
-  availabilityByOptionLabel,
+  availabilityByOptionKey,
 }: MenuSectionCardProps) {
   const { lang, L } = useLang();
   const generatedId = useId().replaceAll(":", "");
@@ -86,6 +90,12 @@ export function MenuSectionCard({
         {section.items.map((item) => {
           const isOpen = openItemId === item.id;
           const image = getMenuItemPhoto(section.id, item.nameAr, item.nameEn, section.image);
+          const itemAvailable = item.options.every(
+            (option) =>
+              availabilityByOptionKey?.get(
+                optionAvailabilityKey(section.id, item.nameAr, option.nameAr),
+              ) ?? true,
+          );
 
           return (
             <li
@@ -123,6 +133,16 @@ export function MenuSectionCard({
                       : L("اضغط لعرض التفاصيل", "Tap to view details")}
                   </span>
                 </span>
+                <span
+                  className={cn(
+                    "shrink-0 border px-2 py-1 text-[0.6rem] font-medium tracking-[0.1em]",
+                    itemAvailable
+                      ? "border-emerald-300/35 text-emerald-200"
+                      : "border-bone/25 text-bone/70",
+                  )}
+                >
+                  {itemAvailable ? L("متوفر", "AVAILABLE") : L("غير متوفر", "NOT AVAILABLE")}
+                </span>
                 {item.featured ? (
                   <span className="inline-flex shrink-0 items-center gap-1.5 text-[0.6rem] font-medium text-gold">
                     <span aria-hidden="true" className="h-1 w-1 rotate-45 bg-gold" />
@@ -138,7 +158,9 @@ export function MenuSectionCard({
                 >
                   {item.options.map((option) => {
                     const available =
-                      availabilityByOptionLabel?.get(`${item.nameAr} — ${option.nameAr}`) ?? true;
+                      availabilityByOptionKey?.get(
+                        optionAvailabilityKey(section.id, item.nameAr, option.nameAr),
+                      ) ?? true;
                     return (
                       <li
                         key={option.id}
@@ -147,22 +169,20 @@ export function MenuSectionCard({
                         <span className="min-w-0 text-sm leading-6 text-bone/75 transition-colors duration-300 group-hover/option:text-bone motion-reduce:transition-none">
                           {L(option.nameAr, option.nameEn)}
                         </span>
-                        <span className="inline-flex min-w-[4.75rem] items-center justify-end border-s border-gold/10 ps-3 text-sm text-gold transition-colors duration-300 group-hover/option:text-gold-soft motion-reduce:transition-none">
-                          {!available ? (
-                            <span className="border border-bone/25 px-2 py-1 text-[0.6rem] tracking-[0.12em] text-bone/70">
-                              {L("غير متوفر", "NOT AVAILABLE")}
-                            </span>
-                          ) : option.price !== undefined ? (
+                        <span className="inline-flex min-w-[7.5rem] items-center justify-end gap-2 border-s border-gold/10 ps-3 text-sm text-gold transition-colors duration-300 group-hover/option:text-gold-soft motion-reduce:transition-none">
+                          {option.price !== undefined ? (
                             <Price value={option.price} className="font-semibold" />
-                          ) : (
-                            <span className="inline-flex items-center gap-2 font-semibold">
-                              <span
-                                aria-hidden="true"
-                                className="h-1.5 w-1.5 rounded-full bg-gold"
-                              />
-                              {L("متوفرة", "Available")}
-                            </span>
-                          )}
+                          ) : null}
+                          <span
+                            className={cn(
+                              "border px-2 py-1 text-[0.6rem] font-medium tracking-[0.1em]",
+                              available
+                                ? "border-emerald-300/35 text-emerald-200"
+                                : "border-bone/25 text-bone/70",
+                            )}
+                          >
+                            {available ? L("متوفر", "AVAILABLE") : L("غير متوفر", "NOT AVAILABLE")}
+                          </span>
                         </span>
                       </li>
                     );

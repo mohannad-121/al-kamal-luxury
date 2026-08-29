@@ -69,8 +69,11 @@ function Menu() {
     0,
   );
   const number = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-JO"), [lang]);
-  const availabilityByOptionLabel = useMemo(
-    () => new Map(products.map((product) => [product.nameAr, product.available])),
+  const availabilityByOptionKey = useMemo(
+    () =>
+      new Map(
+        products.map((product) => [`${product.categoryId}::${product.nameAr}`, product.available]),
+      ),
     [products],
   );
 
@@ -243,7 +246,7 @@ function Menu() {
                   <MenuSectionCard
                     section={section}
                     eager={index < 2}
-                    availabilityByOptionLabel={availabilityByOptionLabel}
+                    availabilityByOptionKey={availabilityByOptionKey}
                   />
                 </Reveal>
               ))}
