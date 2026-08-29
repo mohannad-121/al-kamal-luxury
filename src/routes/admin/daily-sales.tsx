@@ -20,7 +20,7 @@ import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
 import { useDailySales } from "@/hooks/use-daily-sales";
 import { useLang } from "@/hooks/use-lang";
-import { useMenu } from "@/hooks/use-menu";
+import { useMenu, type InventoryIngredient } from "@/hooks/use-menu";
 import type { DailyReport, IngredientUnit, Lang, Product } from "@/types";
 
 export const Route = createFileRoute("/admin/daily-sales")({ component: DailySales });
@@ -306,7 +306,8 @@ function DailySales() {
               const category = categories.find((item) => item.id === product.categoryId);
               const quantity = quantities[product.id] ?? 0;
               const unitPrice = product.price - (product.discount ?? 0);
-              const isReady = product.available && (product.recipe?.length ?? 0) > 0;
+              const hasRecipe = (product.recipe?.length ?? 0) > 0;
+              const canSell = product.available;
               return (
                 <article
                   key={product.id}
@@ -340,12 +341,12 @@ function DailySales() {
                         <Price value={quantity * unitPrice} />
                       </span>
                     </div>
-                    {!isReady ? (
+                    {!product.available || !hasRecipe ? (
                       <p className="mt-3 text-xs text-amber-200">
                         {product.available
                           ? L(
-                              "أضف وصفة لهذا الصنف من إدارة المنيو.",
-                              "Add a recipe for this item in Menu manager.",
+                              "سيتم تسجيل البيع، لكن المخزون لن يتغير حتى تضيف وصفة لهذا الصنف.",
+                              "The sale will be recorded, but inventory will not change until you add a recipe.",
                             )
                           : L("هذا الصنف غير متوفر حالياً.", "This item is currently unavailable.")}
                       </p>
@@ -363,7 +364,7 @@ function DailySales() {
                       <button
                         type="button"
                         onClick={() => void sell(product)}
-                        disabled={!isReady}
+                        disabled={!canSell}
                         className="inline-flex min-h-14 items-center justify-center gap-2 bg-gold px-4 text-base font-semibold text-ink transition-colors hover:bg-gold-soft disabled:cursor-not-allowed disabled:bg-gold/35"
                       >
                         <Plus className="h-6 w-6" /> {L("تسجيل بيع", "Add sale")}
@@ -502,7 +503,7 @@ function DailySales() {
           {history.length ? (
             <div className="divide-y divide-gold/10">
               {history.map((report) => (
-                <ReportRow key={report.id} report={report} />
+                <ReportRow key={report.id} report={report} ingredients={ingredients} />
               ))}
             </div>
           ) : (
@@ -615,7 +616,13 @@ function StatRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function ReportRow({ report }: { report: DailyReport }) {
+function ReportRow({
+  report,
+  ingredients,
+}: {
+  report: DailyReport;
+  ingredients: InventoryIngredient[];
+}) {
   const { L, lang } = useLang();
 
   return (
