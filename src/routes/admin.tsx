@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -106,9 +106,9 @@ function Admin() {
     updateProduct,
     setProductAvailability,
     deleteProduct,
-    refresh,
     seedStarterMenu,
     replaceWithWebsiteMenu,
+    syncOffersAndFamilyMeals,
   } = useMenu();
   const { session, isAdmin, loading: authLoading } = useAdminAuth();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -119,12 +119,35 @@ function Admin() {
   const [menuSearch, setMenuSearch] = useState("");
   const [menuCategory, setMenuCategory] = useState("sandwiches");
   const [syncingMenu, setSyncingMenu] = useState(false);
+  const [syncingAddedSections, setSyncingAddedSections] = useState(false);
   const [availabilitySavingId, setAvailabilitySavingId] = useState<string | null>(null);
   const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const addedSectionsSyncAttempted = useRef(false);
 
   useEffect(() => {
-    if (isAdmin) void refresh();
-  }, [isAdmin, refresh]);
+    if (!isAdmin || addedSectionsSyncAttempted.current) return;
+    addedSectionsSyncAttempted.current = true;
+    setSyncingAddedSections(true);
+    setError("");
+
+    void syncOffersAndFamilyMeals()
+      .then((addedCount) => {
+        if (addedCount > 0) {
+          setAvailabilityMessage(
+            L(
+              `تمت إضافة ${addedCount} أصناف للعروض والوجبات العائلية.`,
+              `${addedCount} Offers and Family Meals records were added.`,
+            ),
+          );
+        }
+      })
+      .catch((syncError) => {
+        setError(
+          syncError instanceof Error ? syncError.message : "Unable to add Offers and Family Meals.",
+        );
+      })
+      .finally(() => setSyncingAddedSections(false));
+  }, [L, isAdmin, syncOffersAndFamilyMeals]);
 
   const isEditing = editingId !== null;
   const sortedProducts = useMemo(
@@ -372,6 +395,32 @@ function Admin() {
     }
   };
 
+  const syncAddedSections = async () => {
+    setSyncingAddedSections(true);
+    setAvailabilityMessage("");
+    setError("");
+    try {
+      const addedCount = await syncOffersAndFamilyMeals();
+      setAvailabilityMessage(
+        addedCount > 0
+          ? L(
+              `تمت إضافة ${addedCount} أصناف للعروض والوجبات العائلية.`,
+              `${addedCount} Offers and Family Meals records were added.`,
+            )
+          : L(
+              "العروض والوجبات العائلية موجودة بالفعل في صفحة الإدارة.",
+              "Offers and Family Meals are already in the admin page.",
+            ),
+      );
+    } catch (syncError) {
+      setError(
+        syncError instanceof Error ? syncError.message : "Unable to add Offers and Family Meals.",
+      );
+    } finally {
+      setSyncingAddedSections(false);
+    }
+  };
+
   const selectCategory = (categoryId: string) => {
     updateField("categoryId", categoryId);
     setSelectedPortion(null);
@@ -447,6 +496,17 @@ function Admin() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void syncAddedSections()}
+              disabled={syncingAddedSections}
+              className="inline-flex min-h-11 items-center gap-2 border border-emerald-300/35 px-4 py-2 text-sm text-emerald-200 transition-colors hover:bg-emerald-300/10 disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncingAddedSections ? "animate-spin" : ""}`} />
+              {syncingAddedSections
+                ? L("جارٍ إضافة الأقسام...", "Adding sections...")
+                : L("إضافة العروض والوجبات العائلية", "Add Offers & Family Meals")}
+            </button>
             <button
               type="button"
               onClick={() => void syncFullWebsiteMenu()}

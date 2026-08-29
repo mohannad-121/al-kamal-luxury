@@ -25,6 +25,7 @@ interface MenuContextValue {
   refresh: () => Promise<void>;
   seedStarterMenu: () => Promise<void>;
   replaceWithWebsiteMenu: () => Promise<void>;
+  syncOffersAndFamilyMeals: () => Promise<number>;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   setProductAvailability: (id: string, available: boolean) => Promise<void>;
@@ -58,6 +59,13 @@ type MenuRow = {
 };
 
 const starterProducts = websiteMenuProducts;
+const addedSectionIds = new Set(["offers", "family-meals"]);
+const addedSectionCategories = websiteMenuCategories.filter((category) =>
+  addedSectionIds.has(category.id),
+);
+const addedSectionProducts = websiteMenuProducts.filter((product) =>
+  addedSectionIds.has(product.categoryId),
+);
 
 const MenuContext = createContext<MenuContextValue | null>(null);
 
@@ -293,6 +301,81 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const syncOffersAndFamilyMeals = useCallback(async () => {
+    setError(null);
+
+    const { data: syncedCategories, error: categorySyncError } = await supabase
+      .from("menu_categories")
+      .upsert(
+        addedSectionCategories.map((category) => ({
+          slug: category.id,
+          name_ar: category.nameAr,
+          name_en: category.nameEn,
+          image_url: category.image,
+          display_order: category.order,
+          is_active: true,
+        })),
+        { onConflict: "slug" },
+      )
+      .select("id, slug");
+    if (categorySyncError) throw new Error(categorySyncError.message);
+
+    const categoryMap = new Map(
+      (syncedCategories ?? []).map((category) => [category.slug, category.id]),
+    );
+    const missingCategory = addedSectionCategories.find(
+      (category) => !categoryMap.has(category.id),
+    );
+    if (missingCategory) {
+      throw new Error(`Unable to add the ${missingCategory.nameEn} category.`);
+    }
+
+    const { data: existingRows, error: existingRowsError } = await supabase
+      .from("menu_items")
+      .select("name_ar, menu_categories!inner(slug)");
+    if (existingRowsError) throw new Error(existingRowsError.message);
+
+    const existingKeys = new Set(
+      (existingRows ?? []).flatMap((row) => {
+        const joinedCategory = Array.isArray(row.menu_categories)
+          ? row.menu_categories[0]
+          : row.menu_categories;
+        return joinedCategory?.slug ? [`${joinedCategory.slug}::${row.name_ar}`] : [];
+      }),
+    );
+    const missingProducts = addedSectionProducts.filter(
+      (product) => !existingKeys.has(`${product.categoryId}::${product.nameAr}`),
+    );
+
+    if (missingProducts.length) {
+      const { data: insertedProducts, error: productInsertError } = await supabase
+        .from("menu_items")
+        .insert(
+          missingProducts.map((product) => ({
+            category_id: categoryMap.get(product.categoryId),
+            name_ar: product.nameAr,
+            name_en: product.nameEn,
+            description_ar: product.descAr,
+            description_en: product.descEn,
+            price: product.price,
+            discount: product.discount ?? 0,
+            image_url: product.image,
+            is_available: product.available,
+            is_popular: product.popular,
+            is_featured: Boolean(product.featured),
+          })),
+        )
+        .select("id");
+      if (productInsertError) throw new Error(productInsertError.message);
+      if ((insertedProducts ?? []).length !== missingProducts.length) {
+        throw new Error("Not all Offers and Family Meals records were saved.");
+      }
+    }
+
+    await refresh();
+    return missingProducts.length;
+  }, [refresh]);
+
   const replaceWithWebsiteMenu = useCallback(async () => {
     setError(null);
 
@@ -379,6 +462,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       refresh,
       seedStarterMenu,
       replaceWithWebsiteMenu,
+      syncOffersAndFamilyMeals,
       addProduct,
       updateProduct,
       setProductAvailability,
@@ -394,6 +478,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       refresh,
       replaceWithWebsiteMenu,
       seedStarterMenu,
+      syncOffersAndFamilyMeals,
       updateProduct,
       setProductAvailability,
     ],
