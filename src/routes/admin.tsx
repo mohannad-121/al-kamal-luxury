@@ -1,11 +1,24 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
-import { ArrowRight, ImagePlus, Pencil, Plus, Trash2, UtensilsCrossed, X } from "lucide-react";
+import {
+  ArrowRight,
+  ImagePlus,
+  LayoutGrid,
+  Pencil,
+  Plus,
+  Search,
+  SearchX,
+  Trash2,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 import { FoodImage } from "@/components/FoodImage";
 import { AdminAccess } from "@/components/AdminAccess";
+import { MenuSectionCard } from "@/components/MenuSectionCard";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
 import { images } from "@/data/menu";
+import { publicMenuSections, type PublicMenuSection } from "@/data/public-menu";
 import { useLang } from "@/hooks/use-lang";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useMenu } from "@/hooks/use-menu";
@@ -29,6 +42,10 @@ type ProductForm = {
 };
 
 const activeCategories = categories.filter((category) => category.active);
+
+function includesMenuQuery(value: string, query: string) {
+  return value.toLocaleLowerCase().includes(query);
+}
 
 type PortionSize = "small" | "medium" | "large";
 
@@ -96,6 +113,8 @@ function Admin() {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [selectedPortion, setSelectedPortion] = useState<PortionSize | null>(null);
   const [error, setError] = useState("");
+  const [menuSearch, setMenuSearch] = useState("");
+  const [menuCategory, setMenuCategory] = useState("all");
 
   useEffect(() => {
     if (isAdmin) void refresh();
@@ -105,6 +124,40 @@ function Admin() {
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
     [products],
+  );
+  const visibleMenuSections = useMemo(() => {
+    const query = menuSearch.trim().toLocaleLowerCase();
+
+    return publicMenuSections
+      .filter((section) => menuCategory === "all" || section.id === menuCategory)
+      .map((section): PublicMenuSection | null => {
+        if (!query) return section;
+
+        if (includesMenuQuery(`${section.nameAr} ${section.nameEn}`, query)) return section;
+
+        const items = section.items.filter((item) =>
+          includesMenuQuery(
+            [
+              item.nameAr,
+              item.nameEn,
+              ...item.options.flatMap((option) => [option.nameAr, option.nameEn]),
+            ].join(" "),
+            query,
+          ),
+        );
+
+        return items.length ? { ...section, items } : null;
+      })
+      .filter((section): section is PublicMenuSection => section !== null);
+  }, [menuCategory, menuSearch]);
+  const visibleMenuItemCount = visibleMenuSections.reduce(
+    (total, section) => total + section.items.length,
+    0,
+  );
+  const visibleMenuOptionCount = visibleMenuSections.reduce(
+    (total, section) =>
+      total + section.items.reduce((subtotal, item) => subtotal + item.options.length, 0),
+    0,
   );
 
   if (authLoading) {
@@ -337,14 +390,14 @@ function Admin() {
       <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow">{L("إدارة الأصناف", "MENU MANAGEMENT")}</p>
+            <p className="eyebrow">{L("المنيو الفعلي", "LIVE MENU CATALOGUE")}</p>
             <h1 className="mt-2 text-3xl text-bone sm:text-4xl">
-              {L("أصناف المنيو", "Menu items")}
+              {L("منيو المطعم", "Restaurant menu")}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {L(
-                "أضف أو عدّل أو احذف أي صنف. التغييرات تظهر فوراً في المنيو.",
-                "Add, edit, or delete any item. Changes appear in the menu immediately.",
+                "نفس الأقسام والأصناف والخيارات والأسعار الظاهرة للزبون.",
+                "The same categories, items, options, and prices shown to customers.",
               )}
             </p>
           </div>
@@ -356,6 +409,121 @@ function Admin() {
             <Plus className="h-4 w-4" />
             {L("إضافة صنف", "Add item")}
           </button>
+        </div>
+
+        <section
+          aria-labelledby="admin-public-menu-heading"
+          className="mt-6 border border-gold/20 bg-charcoal/35 p-4 sm:p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/15 pb-4">
+            <div>
+              <h2 id="admin-public-menu-heading" className="font-display text-2xl text-bone">
+                {L("المنيو المعتمد", "Customer-facing menu")}
+              </h2>
+              <p className="mt-1 text-xs text-bone/55" aria-live="polite">
+                {L(
+                  `${visibleMenuItemCount} صنف · ${visibleMenuOptionCount} خيار`,
+                  `${visibleMenuItemCount} items · ${visibleMenuOptionCount} options`,
+                )}
+              </p>
+            </div>
+            <span className="border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs text-emerald-100">
+              {L("مطابق للموقع", "Matches website")}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)] xl:items-start">
+            <label className="flex min-h-12 items-center gap-3 border border-gold/20 bg-ink/45 px-3 text-bone/70 focus-within:border-gold">
+              <Search className="h-4 w-4 shrink-0 text-gold" />
+              <input
+                value={menuSearch}
+                onChange={(event) => setMenuSearch(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent py-3 text-sm text-bone outline-none placeholder:text-bone/40"
+                placeholder={L(
+                  "ابحث عن صنف أو حجم أو مشروب...",
+                  "Search items, sizes, or drinks...",
+                )}
+                aria-label={L("البحث في منيو الإدارة", "Search the admin menu")}
+              />
+              {menuSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setMenuSearch("")}
+                  className="grid h-9 w-9 shrink-0 place-items-center text-bone/55 hover:text-gold"
+                  aria-label={L("مسح البحث", "Clear search")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </label>
+
+            <div
+              className="no-scrollbar flex gap-2 overflow-x-auto pb-1"
+              role="toolbar"
+              aria-label={L("تصفية المنيو حسب التصنيف", "Filter menu by category")}
+            >
+              <button
+                type="button"
+                aria-pressed={menuCategory === "all"}
+                onClick={() => setMenuCategory("all")}
+                className={`inline-flex min-h-12 shrink-0 items-center gap-2 border px-3 text-sm transition-colors ${
+                  menuCategory === "all"
+                    ? "border-gold bg-gold text-ink"
+                    : "border-gold/20 text-bone/70 hover:border-gold hover:text-gold"
+                }`}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                {L("الكل", "All")}
+              </button>
+              {publicMenuSections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  aria-pressed={menuCategory === section.id}
+                  onClick={() => setMenuCategory(section.id)}
+                  className={`min-h-12 shrink-0 border px-3 text-sm transition-colors ${
+                    menuCategory === section.id
+                      ? "border-gold bg-gold text-ink"
+                      : "border-gold/20 text-bone/70 hover:border-gold hover:text-gold"
+                  }`}
+                >
+                  {L(section.nameAr, section.nameEn)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visibleMenuSections.length ? (
+            <div className="mt-5 grid gap-5 2xl:grid-cols-2">
+              {visibleMenuSections.map((section, index) => (
+                <MenuSectionCard key={section.id} section={section} eager={index < 2} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid min-h-56 place-items-center border border-dashed border-gold/20 bg-ink/30 p-8 text-center">
+              <div>
+                <SearchX className="mx-auto h-7 w-7 text-gold" />
+                <p className="mt-3 text-bone">
+                  {L("لا توجد أصناف مطابقة.", "No matching menu items.")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuSearch("");
+                    setMenuCategory("all");
+                  }}
+                  className="mt-4 text-sm text-gold hover:text-gold-soft"
+                >
+                  {L("عرض كل المنيو", "Show the full menu")}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <div className="mt-10 border-b border-gold/15 pb-4">
+          <p className="eyebrow">{L("إدارة بيانات الأصناف", "DATABASE MENU MANAGEMENT")}</p>
+          <h2 className="mt-1 text-2xl text-bone">{L("تحرير الأصناف", "Edit menu records")}</h2>
         </div>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
