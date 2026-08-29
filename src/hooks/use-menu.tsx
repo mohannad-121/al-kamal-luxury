@@ -156,6 +156,31 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, [refresh]);
 
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const menuUpdates = supabase
+      .channel("menu-item-availability")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "menu_items" },
+        () => void refresh(),
+      )
+      .subscribe();
+    const refreshTimer = window.setInterval(refreshWhenVisible, 15_000);
+
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      void supabase.removeChannel(menuUpdates);
+    };
+  }, [refresh]);
+
   const saveRecipe = useCallback(async (menuItemId: string, product: Product) => {
     const { error: deleteError } = await supabase
       .from("menu_item_ingredients")
