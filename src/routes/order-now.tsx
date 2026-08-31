@@ -58,7 +58,7 @@ function OrderNow() {
             href={restaurant.myThingsUrl}
             target="_blank"
             rel="noreferrer"
-            aria-label={L("افتح صفحة مطعم الكمال على ماي ثينغز", "Open Al Kamal on MyThings")}
+            aria-label={L("افتح صفحة مطعم الكمال على أشيائي", "Open Al Kamal on MyThings")}
             className="group flex min-h-64 flex-col items-center justify-center border border-gold/25 bg-ink p-8 text-center shadow-[var(--shadow-lux)] transition-all duration-500 hover:-translate-y-1 hover:border-gold hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-4 focus-visible:ring-offset-charcoal sm:min-h-72"
           >
             <div className="flex h-24 w-52 items-center justify-center overflow-hidden rounded-xl bg-white p-3 shadow-sm sm:h-28 sm:w-60">
@@ -69,11 +69,11 @@ function OrderNow() {
               />
             </div>
             <span className="mt-7 flex items-center gap-2 font-display text-2xl text-bone group-hover:text-gold">
-              {L("اطلب عبر ماي ثينغز", "Order via MyThings")}
+              {L("اطلب عبر أشيائي", "Order via MyThings")}
               <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="mt-2 text-sm text-muted-foreground">
-              {L("اضغط للانتقال إلى ماي ثينغز", "Click to continue to MyThings")}
+              {L("اضغط للانتقال إلى أشيائي", "Click to continue to MyThings")}
             </span>
           </a>
         </div>
