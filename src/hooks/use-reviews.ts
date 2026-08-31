@@ -30,7 +30,6 @@ export function useReviews() {
     const { data, error } = await supabase
       .from("reviews")
       .select("id, customer_name, review_ar, review_en, rating, city_ar, city_en")
-      .eq("is_approved", true)
       .order("created_at", { ascending: false })
       .limit(6);
 
@@ -50,9 +49,15 @@ export function useReviews() {
     setLoading(false);
   }, []);
 
+  const addReview = useCallback((review: PublicReview) => {
+    setReviews((current) =>
+      [review, ...current.filter((item) => item.id !== review.id)].slice(0, 6),
+    );
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  return { reviews, loading, refresh };
+  return { reviews, loading, refresh, addReview };
 }

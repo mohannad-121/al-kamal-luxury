@@ -76,7 +76,7 @@ function useHeroVideo() {
 
 function Index() {
   const { L, lang } = useLang();
-  const { reviews, loading: reviewsLoading } = useReviews();
+  const { reviews, loading: reviewsLoading, addReview } = useReviews();
   const playHeroVideo = useHeroVideo();
   const number = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-JO"), [lang]);
 
@@ -490,7 +490,7 @@ function Index() {
           ) : null}
 
           <Reveal delay={120}>
-            <ReviewSubmissionForm />
+            <ReviewSubmissionForm onPublished={addReview} />
           </Reveal>
         </div>
       </section>

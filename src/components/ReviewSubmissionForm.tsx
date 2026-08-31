@@ -3,11 +3,16 @@ import { LoaderCircle, Star } from "lucide-react";
 import { GoldButton } from "@/components/GoldButton";
 import { supabase } from "@/lib/supabase";
 import { useLang } from "@/hooks/use-lang";
+import type { PublicReview } from "@/hooks/use-reviews";
 
 const REVIEW_COOLDOWN_KEY = "alkamal.review-submitted-at";
 const REVIEW_COOLDOWN_MS = 10 * 60 * 1000;
 
-export function ReviewSubmissionForm() {
+type ReviewSubmissionFormProps = {
+  onPublished: (review: PublicReview) => void;
+};
+
+export function ReviewSubmissionForm({ onPublished }: ReviewSubmissionFormProps) {
   const { L, lang } = useLang();
   const [name, setName] = useState("");
   const [rating, setRating] = useState(0);
@@ -43,11 +48,14 @@ export function ReviewSubmissionForm() {
       return;
     }
 
+    const submittedName = name.trim();
+    const submittedComment = comment.trim();
+
     setSubmitting(true);
-    const { error } = await supabase.rpc("submit_review", {
-      p_name: name.trim(),
+    const { data: reviewId, error } = await supabase.rpc("submit_review", {
+      p_name: submittedName,
       p_rating: rating,
-      p_comment: comment.trim(),
+      p_comment: submittedComment,
       p_language: lang,
       p_website: website,
     });
@@ -60,6 +68,15 @@ export function ReviewSubmissionForm() {
       return;
     }
 
+    onPublished({
+      id: typeof reviewId === "string" ? reviewId : crypto.randomUUID(),
+      name: submittedName,
+      textAr: lang === "ar" ? submittedComment : null,
+      textEn: lang === "en" ? submittedComment : null,
+      rating,
+      cityAr: null,
+      cityEn: null,
+    });
     localStorage.setItem(REVIEW_COOLDOWN_KEY, String(Date.now()));
     setName("");
     setRating(0);
