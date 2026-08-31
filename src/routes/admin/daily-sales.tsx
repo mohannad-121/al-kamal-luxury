@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
-  ArrowRight,
   ChevronDown,
   History,
   LoaderCircle,
@@ -12,10 +11,10 @@ import {
   ReceiptText,
   Search,
   Trophy,
-  UtensilsCrossed,
   Wallet,
   Wheat,
 } from "lucide-react";
+import { AdminHeader } from "@/components/AdminHeader";
 import { FoodImage } from "@/components/FoodImage";
 import { Price } from "@/components/Price";
 import { categories } from "@/data/categories";
@@ -169,32 +168,7 @@ function DailySales() {
 
   return (
     <main className="min-h-screen bg-ink pb-12 text-bone">
-      <header className="border-b border-gold/20 bg-charcoal/70 px-5 py-4 backdrop-blur sm:px-8">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center border border-gold/45 text-gold">
-              <Wallet className="h-4 w-4" />
-            </span>
-            <span>
-              <span className="block font-display text-lg">
-                {L("الأداء اليومي", "Daily performance")}
-              </span>
-              <span className="text-[.62rem] tracking-[.2em] text-gold">
-                {L("الكمال", "AL KAMAL")}
-              </span>
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Link to="/admin" className="text-bone/70 hover:text-gold">
-              {L("إدارة المنيو", "Menu manager")}
-            </Link>
-            <Link to="/" className="inline-flex items-center gap-1 text-bone/70 hover:text-gold">
-              <ArrowRight className="h-4 w-4" />
-              {L("الموقع", "View site")}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <AdminHeader page="daily-sales" />
 
       <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
