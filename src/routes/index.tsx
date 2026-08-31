@@ -487,11 +487,7 @@ function Index() {
                 );
               })}
             </div>
-          ) : (
-            <Reveal className="mt-10 border border-gold/18 bg-ink/55 p-8 text-center text-muted-foreground">
-              {L("لسا ما في مراجعات.", "No reviews yet.")}
-            </Reveal>
-          )}
+          ) : null}
 
           <Reveal delay={120}>
             <ReviewSubmissionForm />
