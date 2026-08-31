@@ -17,6 +17,7 @@ import { Route as OrderConfirmedRouteImport } from './routes/order-confirmed'
 import { Route as OrderNowRouteImport } from './routes/order-now'
 import { Route as TrackOrderRouteImport } from './routes/track-order'
 import { Route as AdminDailySalesRouteImport } from './routes/admin/daily-sales'
+import { Route as AdminStorageRouteImport } from './routes/admin/storage'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const AdminDailySalesRoute = AdminDailySalesRouteImport.update({
   path: '/daily-sales',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStorageRoute = AdminStorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
   '/admin/daily-sales': typeof AdminDailySalesRoute
+  '/admin/storage': typeof AdminStorageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
   '/admin/daily-sales': typeof AdminDailySalesRoute
+  '/admin/storage': typeof AdminStorageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/order-now': typeof OrderNowRoute
   '/track-order': typeof TrackOrderRoute
   '/admin/daily-sales': typeof AdminDailySalesRoute
+  '/admin/storage': typeof AdminStorageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/order-now'
     | '/track-order'
     | '/admin/daily-sales'
+    | '/admin/storage'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/order-now'
     | '/track-order'
     | '/admin/daily-sales'
+    | '/admin/storage'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/order-now'
     | '/track-order'
     | '/admin/daily-sales'
+    | '/admin/storage'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -191,15 +203,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDailySalesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/storage': {
+      id: '/admin/storage'
+      path: '/storage'
+      fullPath: '/admin/storage'
+      preLoaderRoute: typeof AdminStorageRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminDailySalesRoute: typeof AdminDailySalesRoute
+  AdminStorageRoute: typeof AdminStorageRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDailySalesRoute: AdminDailySalesRoute,
+  AdminStorageRoute: AdminStorageRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

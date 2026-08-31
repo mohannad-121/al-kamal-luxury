@@ -1,8 +1,8 @@
-import { ArrowRight, Languages, UtensilsCrossed, Wallet } from "lucide-react";
+import { ArrowRight, Languages, Package, UtensilsCrossed, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/hooks/use-lang";
 
-type AdminPage = "menu" | "daily-sales";
+type AdminPage = "menu" | "daily-sales" | "storage";
 
 export function AdminHeader({ page }: { page: AdminPage }) {
   const { L, lang, toggle } = useLang();
@@ -16,17 +16,17 @@ export function AdminHeader({ page }: { page: AdminPage }) {
       <div className="mx-auto grid max-w-[1440px] items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center border border-gold/45 text-gold">
-            {page === "menu" ? (
-              <UtensilsCrossed className="h-4 w-4" />
-            ) : (
-              <Wallet className="h-4 w-4" />
-            )}
+            {page === "menu" ? <UtensilsCrossed className="h-4 w-4" /> : null}
+            {page === "daily-sales" ? <Wallet className="h-4 w-4" /> : null}
+            {page === "storage" ? <Package className="h-4 w-4" /> : null}
           </span>
           <span>
             <span className="block font-display text-lg">
               {page === "menu"
                 ? L("إدارة المنيو", "Menu manager")
-                : L("الأداء اليومي", "Daily performance")}
+                : page === "daily-sales"
+                  ? L("الأداء اليومي", "Daily performance")
+                  : L("المخزون", "Storage")}
             </span>
             <span className="text-[.62rem] tracking-[.2em] text-gold">
               {L("الكمال", "AL KAMAL")}
@@ -43,6 +43,9 @@ export function AdminHeader({ page }: { page: AdminPage }) {
           </Link>
           <Link to="/admin/daily-sales" className={linkClass(page === "daily-sales")}>
             {L("الأداء اليومي", "Daily performance")}
+          </Link>
+          <Link to="/admin/storage" className={linkClass(page === "storage")}>
+            {L("المخزون", "Storage")}
           </Link>
           <Link to="/" className={linkClass(false)}>
             {L("الموقع", "View site")}

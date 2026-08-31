@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   ChevronDown,
   History,
   LoaderCircle,
@@ -10,9 +9,7 @@ import {
   Plus,
   ReceiptText,
   Search,
-  Trophy,
   Wallet,
-  Wheat,
 } from "lucide-react";
 import { AdminHeader } from "@/components/AdminHeader";
 import { FoodImage } from "@/components/FoodImage";
@@ -61,15 +58,11 @@ function DailySales() {
     activeDate,
     quantities,
     salesEntries,
-    inventory,
     history,
-    itemSales,
-    ingredientUsage,
     totalRevenue,
     totalItemsSold,
     recordSale,
     undoSale,
-    addStock,
     closeDay,
     ingredients,
     error: databaseError,
@@ -95,34 +88,6 @@ function DailySales() {
     return matchesCategory && matchesSearch;
   });
 
-  const bestSelling = [...itemSales].sort(
-    (a, b) => b.quantity - a.quantity || b.revenue - a.revenue,
-  )[0];
-  const lowestSelling = itemSales.length
-    ? [...itemSales].sort((a, b) => a.quantity - b.quantity || a.revenue - b.revenue)[0]
-    : undefined;
-  const mostUsedIngredient = Object.entries(ingredientUsage)
-    .sort(([, first], [, second]) => second - first)
-    .map(([id]) => ingredients.find((ingredient) => ingredient.id === id))[0];
-  const lowStock = ingredients.filter(
-    (ingredient) => (inventory[ingredient.id] ?? 0) <= ingredient.lowStockThreshold,
-  );
-  const categoryStats = useMemo(
-    () =>
-      activeCategories
-        .map((category) => {
-          const sales = itemSales.filter((item) => item.categoryId === category.id);
-          return {
-            category,
-            revenue: sales.reduce((sum, item) => sum + item.revenue, 0),
-            quantity: sales.reduce((sum, item) => sum + item.quantity, 0),
-          };
-        })
-        .filter((stat) => stat.quantity > 0),
-    [activeCategories, itemSales],
-  );
-  const largestCategoryRevenue = Math.max(1, ...categoryStats.map((stat) => stat.revenue));
-
   const sell = async (product: Product) => {
     const result = await recordSale(product);
     if (!result.ok) {
@@ -145,25 +110,6 @@ function DailySales() {
     } finally {
       setPendingSaleId(null);
     }
-  };
-
-  const restock = async (ingredientId: string) => {
-    const ingredient = ingredients.find((item) => item.id === ingredientId);
-    if (!ingredient) return;
-    const answer = window.prompt(
-      L(
-        `أضف كمية ${ingredient.nameAr} (${ingredient.unit})`,
-        `Add ${ingredient.nameEn} (${ingredient.unit})`,
-      ),
-    );
-    if (answer === null) return;
-    const amount = Number(answer);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setStockMessage(L("أدخل كمية أكبر من صفر.", "Enter an amount greater than zero."));
-      return;
-    }
-    await addStock(ingredientId, amount);
-    setStockMessage("");
   };
 
   return (
@@ -189,7 +135,7 @@ function DailySales() {
           </button>
         </div>
 
-        <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <SummaryCard
             icon={<Wallet />}
             label={L("إيراد اليوم", "Today's revenue")}
@@ -206,20 +152,6 @@ function DailySales() {
             label={L("عمليات البيع", "Sales entries")}
             value={salesEntries}
           />
-          <SummaryCard
-            icon={<Trophy />}
-            label={L("الأكثر مبيعاً", "Best selling item")}
-            value={bestSelling ? L(bestSelling.nameAr, bestSelling.nameEn) : "—"}
-            compact
-          />
-          <SummaryCard
-            icon={<Wheat />}
-            label={L("الأكثر استهلاكاً", "Most used ingredient")}
-            value={
-              mostUsedIngredient ? L(mostUsedIngredient.nameAr, mostUsedIngredient.nameEn) : "—"
-            }
-            compact
-          />
         </section>
 
         {stockMessage ? (
@@ -234,27 +166,6 @@ function DailySales() {
             </button>
           </div>
         ) : null}
-        {lowStock.length ? (
-          <div className="mt-5 border border-amber-300/30 bg-amber-300/10 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-amber-100">
-              <AlertTriangle className="h-4 w-4" /> {L("تنبيه مخزون منخفض", "Low stock warnings")}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {lowStock.map((ingredient) => (
-                <button
-                  key={ingredient.id}
-                  type="button"
-                  onClick={() => void restock(ingredient.id)}
-                  className="border border-amber-200/25 px-2 py-1 text-xs text-amber-50 hover:border-amber-100"
-                >
-                  {L(ingredient.nameAr, ingredient.nameEn)} —{" "}
-                  {formatAmount(inventory[ingredient.id] ?? 0, ingredient.unit, lang)}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         <section className="mt-7">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -372,7 +283,8 @@ function DailySales() {
           ) : null}
         </section>
 
-        <section className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+        {/* Storage panels were moved to /admin/storage. */}
+        {/*
           <div className="border border-gold/20 bg-charcoal/35">
             <div className="border-b border-gold/15 p-5">
               <p className="eyebrow">{L("استخدام اليوم", "INGREDIENTS USED TODAY")}</p>
@@ -480,7 +392,7 @@ function DailySales() {
               </dl>
             </div>
           </div>
-        </section>
+        */}
 
         <section className="mt-8 border border-gold/20 bg-charcoal/35">
           <div className="flex items-center gap-3 border-b border-gold/15 p-5">
@@ -594,15 +506,6 @@ function FilterButton({
     >
       {children}
     </button>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <dt className="text-bone/55">{label}</dt>
-      <dd className="text-right text-bone">{value}</dd>
-    </div>
   );
 }
 
