@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import talabatLogo from "../../logo/talabat.png";
+import myThingsLogo from "../../logo/mythings.jpg";
 import { Navbar } from "@/components/Navbar";
 import { SiteFooter } from "@/components/SiteFooter";
 import { restaurant } from "@/config/restaurant";
@@ -23,14 +24,14 @@ function OrderNow() {
           <p className="mt-4 leading-7 text-muted-foreground">
             {L(
               "افتح صفحة المطعم على طلبات وكمّل طلبك.",
-              "Open our Talabat page to place your order.",
+              "Choose your preferred ordering platform to go directly to our restaurant page and complete your order.",
             )}
           </p>
         </div>
       </section>
 
       <section className="px-4 py-10 sm:px-8 sm:py-16">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
           <a
             href={restaurant.talabatUrl}
             target="_blank"
@@ -51,6 +52,28 @@ function OrderNow() {
             </span>
             <span className="mt-2 text-sm text-muted-foreground">
               {L("بتفتح في تبويب جديد", "Opens in a new tab")}
+            </span>
+          </a>
+          <a
+            href={restaurant.myThingsUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={L("افتح صفحة مطعم الكمال على ماي ثينغز", "Open Al Kamal on MyThings")}
+            className="group flex min-h-64 flex-col items-center justify-center border border-gold/25 bg-ink p-8 text-center shadow-[var(--shadow-lux)] transition-all duration-500 hover:-translate-y-1 hover:border-gold hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-4 focus-visible:ring-offset-charcoal sm:min-h-72"
+          >
+            <div className="flex h-24 w-52 items-center justify-center overflow-hidden rounded-xl bg-white p-3 shadow-sm sm:h-28 sm:w-60">
+              <img
+                src={myThingsLogo}
+                alt="MyThings"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <span className="mt-7 flex items-center gap-2 font-display text-2xl text-bone group-hover:text-gold">
+              {L("اطلب عبر ماي ثينغز", "Order via MyThings")}
+              <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="mt-2 text-sm text-muted-foreground">
+              {L("اضغط للانتقال إلى ماي ثينغز", "Click to continue to MyThings")}
             </span>
           </a>
         </div>
