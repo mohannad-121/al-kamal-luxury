@@ -292,7 +292,10 @@ function Menu() {
             <div className="relative max-w-2xl px-6 py-10 sm:px-10 sm:py-14 lg:px-14">
               <div>
                 <h2 className="max-w-md font-display text-3xl leading-tight text-bone sm:text-4xl">
-                  {L("كمّل طلبك على طلبات.", "Complete your order on Talabat.")}
+                  {L(
+                    "كمّل طلبك على طلبات أو أشيائي.",
+                    "Complete your order on Talabat or MyThings.",
+                  )}
                 </h2>
                 <p className="mt-3 max-w-md text-sm leading-7 text-bone/60">
                   {L(
