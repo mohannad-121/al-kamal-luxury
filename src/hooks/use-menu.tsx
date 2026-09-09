@@ -18,9 +18,12 @@ export type InventoryIngredient = IngredientDefinition & {
   lowStockThreshold: number;
 };
 
+export type CategoryRow = { id: string; slug: string };
+
 interface MenuContextValue {
   products: Product[];
   ingredients: InventoryIngredient[];
+  categoryRows: CategoryRow[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -477,6 +480,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     () => ({
       products,
       ingredients,
+      categoryRows,
       loading,
       error,
       refresh,
@@ -490,6 +494,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     }),
     [
       addProduct,
+      categoryRows,
       deleteProduct,
       error,
       ingredients,

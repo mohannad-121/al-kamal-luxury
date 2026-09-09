@@ -89,18 +89,22 @@ function DailySales() {
   });
 
   const sell = async (product: Product) => {
-    const result = await recordSale(product);
-    if (!result.ok) {
-      const ingredient = ingredients.find((item) => item.id === result.ingredientId);
-      setStockMessage(
-        L(
-          `لا يمكن تسجيل البيع: مخزون ${ingredient?.nameAr ?? "هذا المكوّن"} غير كافٍ.`,
-          `Sale not recorded: ${ingredient?.nameEn ?? "this ingredient"} is out of stock.`,
-        ),
-      );
-      return;
+    setPendingSaleId(product.id);
+    try {
+      const result = await recordSale(product);
+      if (!result.ok) {
+        setStockMessage(
+          L(
+            "تعذر تسجيل البيع. يرجى المحاولة مرة أخرى.",
+            "Sale not recorded. Please try again.",
+          ),
+        );
+        return;
+      }
+      setStockMessage("");
+    } finally {
+      setPendingSaleId(null);
     }
-    setStockMessage("");
   };
 
   const removeSale = async (product: Product) => {

@@ -69,6 +69,11 @@ type HistoryRow = {
 
 const DailySalesContext = createContext<DailySalesContextValue | null>(null);
 
+function isUuid(str: string | null | undefined): boolean {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Amman" }).format(new Date());
 }
@@ -92,13 +97,21 @@ async function purgeLegacyHistory() {
 }
 
 export function DailySalesProvider({ children }: { children: ReactNode }) {
-  const { ingredients, products, refresh: refreshMenu } = useMenu();
+  const { ingredients, products, categoryRows, refresh: refreshMenu } = useMenu();
   const [activeSession, setActiveSession] = useState<SessionRow | null>(null);
   const [itemSales, setItemSales] = useState<DailySaleItem[]>([]);
   const [ingredientUsage, setIngredientUsage] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<DailyReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cat of categoryRows ?? []) {
+      if (cat.slug && cat.id) map.set(cat.slug, cat.id);
+    }
+    return map;
+  }, [categoryRows]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -228,239 +241,250 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
 
   const recordSale = useCallback(
     async (product: Product): Promise<SaleResult> => {
-      const { data: sessionId, error: sessionError } = await supabase.rpc(
+      setError(null);
+      const activeDate = today();
+
+      // 1. Get or create today's active session ID
+      let sessionId: string | null = null;
+      const { data: rpcSessionId, error: rpcErr } = await supabase.rpc(
         "get_or_create_today_session",
       );
-      if (sessionError || !sessionId) {
-        setError(sessionError?.message ?? "Unable to open today’s sales session.");
+
+      if (!rpcErr && rpcSessionId) {
+        sessionId = rpcSessionId;
+      } else {
+        const { data: existingSession } = await supabase
+          .from("daily_sessions")
+          .select("id")
+          .eq("business_date", activeDate)
+          .eq("is_closed", false)
+          .maybeSingle();
+
+        if (existingSession?.id) {
+          sessionId = existingSession.id;
+        } else {
+          const { data: newSession, error: createErr } = await supabase
+            .from("daily_sessions")
+            .insert({
+              business_date: activeDate,
+              total_revenue: 0,
+              total_items_sold: 0,
+              total_sales_entries: 0,
+              is_closed: false,
+            })
+            .select("id")
+            .single();
+
+          if (createErr || !newSession) {
+            const msg = createErr?.message ?? "Unable to open daily sales session.";
+            console.error("[recordSale] Session creation error:", createErr);
+            setError(msg);
+            return { ok: false, ingredientId: "" };
+          }
+          sessionId = newSession.id;
+        }
+      }
+
+      if (!sessionId) {
+        setError("Unable to resolve today's sales session.");
         return { ok: false, ingredientId: "" };
       }
 
-      // Snapshot current manual inventory to prevent automatic stock deduction
-      const preSaleInventory = Object.fromEntries(
-        ingredients.map((ing) => [ing.id, ing.availableQuantity]),
+      // 2. Resolve category UUID safely
+      const categoryUUID =
+        categoryMap.get(product.categoryId) ||
+        (isUuid(product.categoryId) ? product.categoryId : null);
+
+      // 3. Calculate unit price safely
+      const rawPrice = Number(product.price);
+      const rawDiscount = Number(product.discount ?? 0);
+      const unitPrice = Math.max(
+        0,
+        Number.isFinite(rawPrice)
+          ? rawPrice - (Number.isFinite(rawDiscount) ? rawDiscount : 0)
+          : 0,
       );
 
-      const { error: saleError } = await supabase.rpc("record_sale", {
-        p_session_id: sessionId,
-        p_menu_item_id: product.id,
-        p_delta: 1,
-      });
+      // 4. Query current quantity sold for this item in this session
+      const { data: existingSale, error: fetchSaleErr } = await supabase
+        .from("daily_item_sales")
+        .select("quantity_sold, revenue")
+        .eq("session_id", sessionId)
+        .eq("menu_item_id", product.id)
+        .maybeSingle();
 
-      if (saleError) {
-        // Fallback: insert directly into daily_item_sales if record_sale fails due to inventory checks
-        const unitPrice = product.price - (product.discount ?? 0);
-        const existingItem = itemSales.find((item) => item.productId === product.id);
-        const newQty = (existingItem?.quantity ?? 0) + 1;
-        const newRev = (existingItem?.revenue ?? 0) + unitPrice;
+      if (fetchSaleErr) {
+        console.error("[recordSale] Fetch item sale error:", fetchSaleErr);
+      }
 
-        const { error: insertError } = await supabase.from("daily_item_sales").upsert({
+      const currentQty = Number(existingSale?.quantity_sold ?? 0);
+      const currentRev = Number(existingSale?.revenue ?? 0);
+      const nextQty = currentQty + 1;
+      const nextRev = Number((currentRev + unitPrice).toFixed(3));
+
+      // 5. Upsert into daily_item_sales (Zero inventory touched)
+      const { error: upsertErr } = await supabase.from("daily_item_sales").upsert(
+        {
           session_id: sessionId,
           menu_item_id: product.id,
           item_name_ar: product.nameAr,
           item_name_en: product.nameEn,
-          category_id: product.categoryId,
+          category_id: categoryUUID,
           unit_price: unitPrice,
-          quantity_sold: newQty,
-          revenue: newRev,
-        });
+          quantity_sold: nextQty,
+          revenue: nextRev,
+        },
+        { onConflict: "session_id,menu_item_id" },
+      );
 
-        if (!insertError && activeSession) {
-          await supabase
-            .from("daily_sessions")
-            .update({
-              total_revenue: Number(activeSession.total_revenue) + unitPrice,
-              total_items_sold: Number(activeSession.total_items_sold) + 1,
-              total_sales_entries: Number(activeSession.total_sales_entries) + 1,
-            })
-            .eq("id", sessionId);
-        }
+      if (upsertErr) {
+        console.error(
+          `[recordSale Failed] Product: "${product.nameEn}" (${product.id}), Category: ${product.categoryId} (UUID: ${categoryUUID}), Error:`,
+          upsertErr,
+        );
+        setError(`تعذر تسجيل البيع: ${upsertErr.message}`);
+        return { ok: false, ingredientId: "" };
       }
 
-      // Restore manual inventory levels so sales NEVER deduct inventory
-      for (const ingredient of ingredients) {
-        const preQty = preSaleInventory[ingredient.id];
-        if (typeof preQty === "number") {
-          await supabase
-            .from("ingredients")
-            .update({ available_quantity: preQty })
-            .eq("id", ingredient.id);
-        }
+      // 6. Update session totals in database directly
+      const { data: latestSession } = await supabase
+        .from("daily_sessions")
+        .select("total_revenue, total_items_sold, total_sales_entries")
+        .eq("id", sessionId)
+        .single();
+
+      if (latestSession) {
+        const nextTotalRevenue = Number(
+          (Number(latestSession.total_revenue ?? 0) + unitPrice).toFixed(3),
+        );
+        const nextTotalItems = Number(latestSession.total_items_sold ?? 0) + 1;
+        const nextSalesEntries = Number(latestSession.total_sales_entries ?? 0) + 1;
+
+        await supabase
+          .from("daily_sessions")
+          .update({
+            total_revenue: nextTotalRevenue,
+            total_items_sold: nextTotalItems,
+            total_sales_entries: nextSalesEntries,
+          })
+          .eq("id", sessionId);
       }
 
+      // 7. Verify sale persisted in database
+      const { data: verifiedSale, error: verifyErr } = await supabase
+        .from("daily_item_sales")
+        .select("quantity_sold")
+        .eq("session_id", sessionId)
+        .eq("menu_item_id", product.id)
+        .single();
+
+      if (verifyErr || !verifiedSale || Number(verifiedSale.quantity_sold) !== nextQty) {
+        console.error(
+          `[recordSale Verification Failed] Expected qty ${nextQty}, got ${verifiedSale?.quantity_sold}, error:`,
+          verifyErr,
+        );
+        setError("تعذر التحقق من تسجيل البيع في قاعدة البيانات.");
+        return { ok: false, ingredientId: "" };
+      }
+
+      // 8. Success! Sync UI state from Supabase without touching inventory.
       await sync();
       return { ok: true };
     },
-    [activeSession, ingredients, itemSales, sync],
+    [categoryMap, sync],
   );
 
   const undoSale = useCallback(
-    async (product: Product) => {
-      const currentSale = itemSales.find((item) => item.productId === product.id);
-      if (!activeSession || !currentSale || currentSale.quantity <= 0) return false;
-
+    async (product: Product): Promise<boolean> => {
       setError(null);
-      const nextQuantity = currentSale.quantity - 1;
-      const { error: undoError } = await supabase.rpc("record_sale", {
-        p_session_id: activeSession.id,
-        p_menu_item_id: product.id,
-        p_delta: -1,
-      });
+      const activeDate = today();
 
-      const { data: verifiedSale, error: verificationError } = await supabase
+      // Find session ID
+      const { data: sessionData } = await supabase
+        .from("daily_sessions")
+        .select("id")
+        .eq("business_date", activeDate)
+        .eq("is_closed", false)
+        .maybeSingle();
+
+      const sessionId = sessionData?.id ?? activeSession?.id;
+      if (!sessionId) return false;
+
+      const rawPrice = Number(product.price);
+      const rawDiscount = Number(product.discount ?? 0);
+      const unitPrice = Math.max(
+        0,
+        Number.isFinite(rawPrice)
+          ? rawPrice - (Number.isFinite(rawDiscount) ? rawDiscount : 0)
+          : 0,
+      );
+
+      const { data: existingSale } = await supabase
         .from("daily_item_sales")
-        .select("quantity_sold")
-        .eq("session_id", activeSession.id)
+        .select("quantity_sold, revenue")
+        .eq("session_id", sessionId)
         .eq("menu_item_id", product.id)
         .maybeSingle();
-      const verifiedQuantity = verifiedSale ? Number(verifiedSale.quantity_sold) : 0;
 
-      if (!undoError && !verificationError && verifiedQuantity === nextQuantity) {
-        await sync();
-        return true;
-      }
+      if (!existingSale || Number(existingSale.quantity_sold) <= 0) return false;
 
-      // Some deployed versions of record_sale reject or ignore a delta that
-      // would reduce a row to zero. Fall back to verified admin updates so the
-      // minus button can always reverse one recorded sale.
-      if (!undoError && verificationError) {
-        setError(verificationError.message);
-        await sync();
-        return false;
-      }
-      if (!undoError && verifiedQuantity !== currentSale.quantity) {
-        await sync();
-        return verifiedQuantity < currentSale.quantity;
-      }
+      const currentQty = Number(existingSale.quantity_sold);
+      const currentRev = Number(existingSale.revenue);
+      const nextQty = currentQty - 1;
+      const nextRev = Math.max(0, Number((currentRev - unitPrice).toFixed(3)));
 
-      const rollback: Array<() => Promise<void>> = [];
-      try {
-        const nextRevenue = Math.max(
-          0,
-          Number((currentSale.revenue - currentSale.unitPrice).toFixed(3)),
-        );
-        const { data: saleRows, error: saleUpdateError } = await supabase
+      if (nextQty > 0) {
+        const { error: updateErr } = await supabase
           .from("daily_item_sales")
-          .update({ quantity_sold: nextQuantity, revenue: nextRevenue })
-          .eq("session_id", activeSession.id)
-          .eq("menu_item_id", product.id)
-          .eq("quantity_sold", currentSale.quantity)
-          .select("menu_item_id");
-        if (saleUpdateError || saleRows?.length !== 1) {
-          throw new Error(
-            saleUpdateError?.message ?? "The sale changed on another device. Try again.",
-          );
-        }
-        rollback.push(async () => {
-          await supabase
-            .from("daily_item_sales")
-            .update({ quantity_sold: currentSale.quantity, revenue: currentSale.revenue })
-            .eq("session_id", activeSession.id)
-            .eq("menu_item_id", product.id)
-            .eq("quantity_sold", nextQuantity);
-        });
+          .update({ quantity_sold: nextQty, revenue: nextRev })
+          .eq("session_id", sessionId)
+          .eq("menu_item_id", product.id);
 
-        for (const recipeItem of product.recipe ?? []) {
-          const currentUsage = ingredientUsage[recipeItem.ingredientId] ?? 0;
-          const reversalQuantity = Math.min(currentUsage, recipeItem.quantity);
-          if (reversalQuantity <= 0) continue;
-          const nextUsage = currentUsage - reversalQuantity;
-          const { data: usageRows, error: usageUpdateError } = await supabase
-            .from("daily_ingredient_usage")
-            .update({ quantity_used: nextUsage })
-            .eq("session_id", activeSession.id)
-            .eq("ingredient_id", recipeItem.ingredientId)
-            .eq("quantity_used", currentUsage)
-            .select("ingredient_id");
-          if (usageUpdateError || usageRows?.length !== 1) {
-            throw new Error(
-              usageUpdateError?.message ?? "Ingredient usage changed on another device. Try again.",
-            );
-          }
-          rollback.push(async () => {
-            await supabase
-              .from("daily_ingredient_usage")
-              .update({ quantity_used: currentUsage })
-              .eq("session_id", activeSession.id)
-              .eq("ingredient_id", recipeItem.ingredientId)
-              .eq("quantity_used", nextUsage);
-          });
+        if (updateErr) {
+          console.error("[undoSale Error]", updateErr.message);
+          setError(updateErr.message);
+          return false;
         }
+      } else {
+        const { error: deleteErr } = await supabase
+          .from("daily_item_sales")
+          .delete()
+          .eq("session_id", sessionId)
+          .eq("menu_item_id", product.id);
 
-        const nextSessionRevenue = Math.max(
-          0,
-          Number((Number(activeSession.total_revenue) - currentSale.unitPrice).toFixed(3)),
-        );
-        const nextItemsSold = Math.max(0, Number(activeSession.total_items_sold) - 1);
-        const nextSalesEntries = Math.max(0, Number(activeSession.total_sales_entries) - 1);
-        const { data: sessionRows, error: sessionUpdateError } = await supabase
+        if (deleteErr) {
+          console.error("[undoSale Delete Error]", deleteErr.message);
+          setError(deleteErr.message);
+          return false;
+        }
+      }
+
+      // Update session totals in database directly
+      const { data: latestSession } = await supabase
+        .from("daily_sessions")
+        .select("total_revenue, total_items_sold, total_sales_entries")
+        .eq("id", sessionId)
+        .single();
+
+      if (latestSession) {
+        await supabase
           .from("daily_sessions")
           .update({
-            total_revenue: nextSessionRevenue,
-            total_items_sold: nextItemsSold,
-            total_sales_entries: nextSalesEntries,
+            total_revenue: Math.max(
+              0,
+              Number((Number(latestSession.total_revenue ?? 0) - unitPrice).toFixed(3)),
+            ),
+            total_items_sold: Math.max(0, Number(latestSession.total_items_sold ?? 0) - 1),
+            total_sales_entries: Math.max(0, Number(latestSession.total_sales_entries ?? 0) - 1),
           })
-          .eq("id", activeSession.id)
-          .eq("total_items_sold", activeSession.total_items_sold)
-          .select("id");
-        if (sessionUpdateError || sessionRows?.length !== 1) {
-          throw new Error(
-            sessionUpdateError?.message ?? "Daily totals changed on another device. Try again.",
-          );
-        }
-        rollback.push(async () => {
-          await supabase
-            .from("daily_sessions")
-            .update({
-              total_revenue: activeSession.total_revenue,
-              total_items_sold: activeSession.total_items_sold,
-              total_sales_entries: activeSession.total_sales_entries,
-            })
-            .eq("id", activeSession.id)
-            .eq("total_items_sold", nextItemsSold);
-        });
-
-        for (const recipeItem of product.recipe ?? []) {
-          const reversalQuantity = Math.min(
-            ingredientUsage[recipeItem.ingredientId] ?? 0,
-            recipeItem.quantity,
-          );
-          if (reversalQuantity <= 0) continue;
-          const { error: inventoryError } = await supabase.rpc("adjust_inventory", {
-            p_ingredient_id: recipeItem.ingredientId,
-            p_quantity_change: reversalQuantity,
-            p_note: `Removed sale: ${product.nameEn}`,
-          });
-          if (inventoryError) throw new Error(inventoryError.message);
-          rollback.push(async () => {
-            await supabase.rpc("adjust_inventory", {
-              p_ingredient_id: recipeItem.ingredientId,
-              p_quantity_change: -reversalQuantity,
-              p_note: `Rollback removed sale: ${product.nameEn}`,
-            });
-          });
-        }
-
-        if (nextQuantity === 0) {
-          await supabase
-            .from("daily_item_sales")
-            .delete()
-            .eq("session_id", activeSession.id)
-            .eq("menu_item_id", product.id)
-            .eq("quantity_sold", 0);
-        }
-
-        await sync();
-        return true;
-      } catch (caught) {
-        for (const restore of rollback.reverse()) await restore();
-        const message = caught instanceof Error ? caught.message : undoError?.message;
-        setError(message ?? "Unable to remove this sale.");
-        await sync();
-        return false;
+          .eq("id", sessionId);
       }
+
+      // Success! NO inventory modification. Sync UI.
+      await sync();
+      return true;
     },
-    [activeSession, ingredientUsage, itemSales, sync],
+    [activeSession?.id, sync],
   );
 
   const updateStock = useCallback(
