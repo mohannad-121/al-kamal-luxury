@@ -2,14 +2,9 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
-  Bread,
-  Check,
-  CheckCircle2,
-  Filter,
   Minus,
   Package,
   Plus,
-  RefreshCw,
   RotateCcw,
   Search,
   X,
@@ -49,7 +44,7 @@ function getUnitLabel(unit: IngredientUnit, lang: Lang) {
       case "ml":
         return "مل";
       default:
-        return unit;
+        return unit ?? "قطعة";
     }
   }
   switch (unit) {
@@ -60,7 +55,7 @@ function getUnitLabel(unit: IngredientUnit, lang: Lang) {
     case "ml":
       return "ml";
     default:
-      return unit;
+      return unit ?? "pcs";
   }
 }
 
@@ -70,35 +65,38 @@ function getStep(unit: IngredientUnit) {
 
 function Storage() {
   const { L, lang } = useLang();
-  const {
-    ingredients,
-    inventory,
-    updateStock,
-    resetAllStockToZero,
-    error: databaseError,
-  } = useDailySales();
+  const dailySales = useDailySales();
+
+  const ingredients = dailySales?.ingredients ?? [];
+  const inventory = dailySales?.inventory ?? {};
+  const updateStock = dailySales?.updateStock;
+  const resetAllStockToZero = dailySales?.resetAllStockToZero;
+  const databaseError = dailySales?.error ?? null;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [message, setMessage] = useState("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [inputState, setInputState] = useState<Record<string, string>>({});
 
   const filteredIngredients = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
     return ingredients.filter((item) => {
+      if (!item) return false;
       const category = getCategory(item.id);
       if (activeCategory !== "all" && category !== activeCategory) return false;
       if (!query) return true;
       return (
-        item.nameAr.toLocaleLowerCase().includes(query) ||
-        item.nameEn.toLocaleLowerCase().includes(query) ||
-        item.id.toLocaleLowerCase().includes(query)
+        (item.nameAr ?? "").toLocaleLowerCase().includes(query) ||
+        (item.nameEn ?? "").toLocaleLowerCase().includes(query) ||
+        (item.id ?? "").toLocaleLowerCase().includes(query)
       );
     });
   }, [activeCategory, ingredients, searchQuery]);
 
   const handleQtyChange = async (ingredientId: string, value: number) => {
+    if (!updateStock) return;
     const safeQty = Math.max(0, Math.round(value));
     setSavingId(ingredientId);
     try {
@@ -112,13 +110,16 @@ function Storage() {
 
   const handleStep = (ingredientId: string, currentQty: number, step: number) => {
     const nextQty = Math.max(0, currentQty + step);
+    setInputState((prev) => ({ ...prev, [ingredientId]: String(nextQty) }));
     void handleQtyChange(ingredientId, nextQty);
   };
 
   const handleResetAll = async () => {
+    if (!resetAllStockToZero) return;
     setResetConfirmOpen(false);
     try {
       await resetAllStockToZero();
+      setInputState({});
       setMessage(
         L(
           "تم التصفير: جميع الكميات في المخزون أصبحت 0 الآن.",
@@ -308,6 +309,7 @@ function Storage() {
             const step = getStep(item.unit);
             const unitLabel = getUnitLabel(item.unit, lang);
             const isBread = breadIds.has(item.id);
+            const inputValue = inputState[item.id] ?? String(currentQty);
 
             return (
               <div
@@ -326,7 +328,7 @@ function Storage() {
                         {unitLabel}
                       </span>
                       <h3 className="mt-2 font-display text-lg text-bone">
-                        {L(item.nameAr, item.nameEn)}
+                        {L(item.nameAr ?? item.id, item.nameEn ?? item.id)}
                       </h3>
                     </div>
 
@@ -334,12 +336,12 @@ function Storage() {
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${
                           currentQty > 0
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                            : "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                            ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                            : "border border-amber-500/30 bg-amber-500/15 text-amber-300"
                         }`}
                       >
                         {currentQty > 0
-                          ? L(`${currentQty} ${unitLabel}`, `${currentQty} ${unitLabel}`)
+                          ? `${currentQty} ${unitLabel}`
                           : L("غير متوفر (0)", "Out of stock (0)")}
                       </span>
                     </div>
@@ -366,10 +368,17 @@ function Storage() {
                         type="number"
                         min={0}
                         step={step}
-                        value={currentQty}
+                        value={inputValue}
                         onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (Number.isFinite(val)) void handleQtyChange(item.id, val);
+                          const valStr = e.target.value;
+                          setInputState((prev) => ({ ...prev, [item.id]: valStr }));
+                          const parsed = Number(valStr);
+                          if (Number.isFinite(parsed) && valStr.trim() !== "") {
+                            void handleQtyChange(item.id, parsed);
+                          }
+                        }}
+                        onBlur={() => {
+                          setInputState((prev) => ({ ...prev, [item.id]: String(currentQty) }));
                         }}
                         className="h-12 w-full rounded-xl border border-gold/30 bg-ink px-3 text-center font-display text-xl font-bold text-gold outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/20"
                       />

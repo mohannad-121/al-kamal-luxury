@@ -265,13 +265,13 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
           revenue: newRev,
         });
 
-        if (!insertError) {
+        if (!insertError && activeSession) {
           await supabase
             .from("daily_sessions")
             .update({
-              total_revenue: totalRevenue + unitPrice,
-              total_items_sold: totalItemsSold + 1,
-              total_sales_entries: salesEntries + 1,
+              total_revenue: Number(activeSession.total_revenue) + unitPrice,
+              total_items_sold: Number(activeSession.total_items_sold) + 1,
+              total_sales_entries: Number(activeSession.total_sales_entries) + 1,
             })
             .eq("id", sessionId);
         }
@@ -291,7 +291,7 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
       await sync();
       return { ok: true };
     },
-    [ingredients, itemSales, salesEntries, sync, totalItemsSold, totalRevenue],
+    [activeSession, ingredients, itemSales, sync],
   );
 
   const undoSale = useCallback(
