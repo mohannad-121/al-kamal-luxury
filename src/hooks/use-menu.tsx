@@ -36,7 +36,6 @@ interface MenuContextValue {
   deleteProduct: (id: string) => Promise<void>;
 }
 
-type CategoryRow = { id: string; slug: string };
 type IngredientRow = {
   id: string;
   name_ar: string;
