@@ -9,24 +9,45 @@ DROP FUNCTION IF EXISTS public.record_sale();
 DROP FUNCTION IF EXISTS public.record_sale_manual_inventory(uuid, integer);
 DROP FUNCTION IF EXISTS public.record_sale_manual_inventory();
 
--- 2. CREATE HARDENED is_admin() FUNCTION
+-- 2. CREATE HARDENED, DYNAMIC is_admin() FUNCTION
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_is_admin boolean := false;
 BEGIN
-  -- Unconditionally return false for unauthenticated callers
   IF auth.uid() IS NULL THEN
     RETURN false;
   END IF;
 
-  RETURN EXISTS (
-    SELECT 1
-    FROM public.admin_users
-    WHERE id = auth.uid()
-  );
+  -- 1. Try user_id column
+  BEGIN
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = $1)'
+    INTO v_is_admin USING auth.uid();
+    IF v_is_admin THEN RETURN true; END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  -- 2. Try id column
+  BEGIN
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE id = $1)'
+    INTO v_is_admin USING auth.uid();
+    IF v_is_admin THEN RETURN true; END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  -- 3. Try email column
+  BEGIN
+    EXECUTE 'SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE LOWER(email) = LOWER($1))'
+    INTO v_is_admin USING COALESCE(auth.jwt()->>'email', '');
+    IF v_is_admin THEN RETURN true; END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  RETURN false;
 END;
 $$;
 
