@@ -448,7 +448,7 @@ function Index() {
             </div>
           ) : reviews.length > 0 ? (
             <>
-              <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-8 grid gap-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                 {reviews.slice(0, visibleReviewCount).map((review, index) => {
                 const text =
                   lang === "ar"
@@ -459,14 +459,14 @@ function Index() {
                     ? (review.cityAr ?? review.cityEn)
                     : (review.cityEn ?? review.cityAr);
                 return (
-                  <Reveal key={review.id} delay={(index % 3) * 80}>
-                    <article className="group relative h-full overflow-hidden border border-gold/18 bg-ink/65 p-6 transition-colors duration-500 hover:border-gold/40 sm:p-7">
+                  <Reveal key={review.id} delay={(index % 4) * 70}>
+                    <article className="group relative h-full overflow-hidden border border-gold/18 bg-ink/65 p-4 transition-colors duration-500 hover:border-gold/40 sm:p-5">
                       <Quote
-                        className="h-7 w-7 text-gold/70 transition-transform duration-500 group-hover:-translate-y-1"
+                        className="h-6 w-6 text-gold/70 transition-transform duration-500 group-hover:-translate-y-1"
                         aria-hidden="true"
                       />
                       <div
-                        className="mt-5 flex text-gold"
+                        className="mt-4 flex text-gold"
                         aria-label={L(
                           `${number.format(review.rating)} من ٥ نجوم`,
                           `${review.rating} out of 5 stars`,
@@ -475,13 +475,13 @@ function Index() {
                         {Array.from({ length: 5 }, (_, starIndex) => (
                           <Star
                             key={starIndex}
-                            className="h-4 w-4"
+                            className="h-3.5 w-3.5"
                             fill={starIndex < review.rating ? "currentColor" : "none"}
                           />
                         ))}
                       </div>
-                      <p className="mt-5 min-h-16 text-base leading-8 text-bone/85">{text}</p>
-                      <p className="mt-7 border-t border-gold/12 pt-4 font-display text-lg text-gold">
+                      <p className="mt-4 min-h-12 text-sm leading-7 text-bone/85">{text}</p>
+                      <p className="mt-5 border-t border-gold/12 pt-3 font-display text-base text-gold">
                         {review.name}
                         {city ? (
                           <span className="font-sans text-sm text-muted-foreground"> · {city}</span>
