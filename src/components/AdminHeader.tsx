@@ -1,6 +1,7 @@
-import { ArrowRight, Languages, Package, UtensilsCrossed, Wallet } from "lucide-react";
+import { ArrowRight, Languages, LogOut, Package, UtensilsCrossed, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useLang } from "@/hooks/use-lang";
+import { supabase } from "@/lib/supabase";
 
 type AdminPage = "menu" | "daily-sales" | "storage";
 
@@ -10,6 +11,11 @@ export function AdminHeader({ page }: { page: AdminPage }) {
     `inline-flex min-h-10 items-center justify-center gap-2 px-2 text-xs transition-colors sm:px-3 sm:text-sm ${
       active ? "border-b-2 border-gold text-gold" : "text-bone/70 hover:text-gold"
     }`;
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   return (
     <header className="border-b border-gold/20 bg-charcoal/70 px-5 py-4 backdrop-blur sm:px-8">
@@ -53,7 +59,7 @@ export function AdminHeader({ page }: { page: AdminPage }) {
           </Link>
         </nav>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={toggle}
@@ -62,6 +68,15 @@ export function AdminHeader({ page }: { page: AdminPage }) {
           >
             <Languages className="h-4 w-4" aria-hidden="true" />
             <span>{lang === "ar" ? "EN" : "ع"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="inline-flex min-h-10 items-center gap-2 border border-red-500/40 bg-red-500/10 px-3 text-sm text-red-200 transition-colors hover:border-red-400 hover:bg-red-500/20"
+            title={L("تسجيل الخروج", "Sign out")}
+          >
+            <LogOut className="h-4 w-4" />
+            <span>{L("خروج", "Sign out")}</span>
           </button>
         </div>
       </div>
