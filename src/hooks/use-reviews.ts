@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+const MAX_PUBLIC_REVIEWS = 100;
+
 export type PublicReview = {
   id: string;
   name: string;
@@ -31,7 +33,7 @@ export function useReviews() {
       .from("reviews")
       .select("id, customer_name, review_ar, review_en, rating, city_ar, city_en")
       .order("created_at", { ascending: false })
-      .limit(6);
+      .limit(MAX_PUBLIC_REVIEWS);
 
     if (!error) {
       setReviews(
@@ -51,7 +53,7 @@ export function useReviews() {
 
   const addReview = useCallback((review: PublicReview) => {
     setReviews((current) =>
-      [review, ...current.filter((item) => item.id !== review.id)].slice(0, 6),
+      [review, ...current.filter((item) => item.id !== review.id)].slice(0, MAX_PUBLIC_REVIEWS),
     );
   }, []);
 

@@ -77,6 +77,7 @@ function useHeroVideo() {
 function Index() {
   const { L, lang } = useLang();
   const { reviews, loading: reviewsLoading, addReview } = useReviews();
+  const [visibleReviewCount, setVisibleReviewCount] = useState(6);
   // The cinematic video is useful in production, but it adds continuous decode
   // work while reviewing UI changes locally. Keep localhost responsive without
   // changing the live experience.
@@ -446,8 +447,9 @@ function Index() {
               ))}
             </div>
           ) : reviews.length > 0 ? (
-            <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {reviews.map((review, index) => {
+            <>
+              <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {reviews.slice(0, visibleReviewCount).map((review, index) => {
                 const text =
                   lang === "ar"
                     ? (review.textAr ?? review.textEn)
@@ -488,8 +490,20 @@ function Index() {
                     </article>
                   </Reveal>
                 );
-              })}
-            </div>
+                })}
+              </div>
+              {reviews.length > visibleReviewCount ? (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleReviewCount((count) => count + 6)}
+                    className="luxury-cta luxury-cta-outline"
+                  >
+                    {L("عرض المزيد من الآراء", "Show more reviews")}
+                  </button>
+                </div>
+              ) : null}
+            </>
           ) : null}
 
           <Reveal delay={120}>
