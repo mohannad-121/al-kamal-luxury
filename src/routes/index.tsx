@@ -77,7 +77,10 @@ function useHeroVideo() {
 function Index() {
   const { L, lang } = useLang();
   const { reviews, loading: reviewsLoading, addReview } = useReviews();
-  const playHeroVideo = useHeroVideo();
+  // The cinematic video is useful in production, but it adds continuous decode
+  // work while reviewing UI changes locally. Keep localhost responsive without
+  // changing the live experience.
+  const playHeroVideo = useHeroVideo() && !import.meta.env.DEV;
   const number = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-JO" : "en-JO"), [lang]);
 
   return (

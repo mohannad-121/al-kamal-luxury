@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useMenu, type InventoryIngredient } from "@/hooks/use-menu";
 import type { DailyReport, DailySaleItem, Product } from "@/types";
 
@@ -92,6 +93,7 @@ async function purgeLegacyHistory() {
 }
 
 export function DailySalesProvider({ children }: { children: ReactNode }) {
+  const { isAdmin, loading: authLoading } = useAdminAuth();
   const { ingredients, products, refresh: refreshMenu } = useMenu();
   const [activeSession, setActiveSession] = useState<SessionRow | null>(null);
   const [itemSales, setItemSales] = useState<DailySaleItem[]>([]);
@@ -215,12 +217,18 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
   }, [products]);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     void refresh();
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       void refresh();
     });
     return () => listener.subscription.unsubscribe();
-  }, [refresh]);
+  }, [authLoading, isAdmin, refresh]);
 
   const sync = useCallback(async () => {
     await Promise.all([refresh(), refreshMenu()]);

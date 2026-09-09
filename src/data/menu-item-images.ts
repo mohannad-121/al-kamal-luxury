@@ -1,7 +1,15 @@
 import type { Product } from "@/types";
 
+// Serve menu photos through Vite instead of direct URL paths. This avoids 404s
+// for Arabic filenames in the local dev server and produces hashed assets in builds.
+const menuItemAssets = import.meta.glob("../../menuitemsphotos/**/*.{jpg,png}", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>;
+
 const menuImage = (folder: string, file: string) =>
-  `/menu-items/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
+  menuItemAssets[`../../menuitemsphotos/${folder}/${file}`] ?? "/images/levantine-bowls-premium.jpg";
 
 const folderImages = {
   boxes: {

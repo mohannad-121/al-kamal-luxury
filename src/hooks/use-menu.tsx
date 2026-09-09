@@ -7,9 +7,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { ingredientDefinitions } from "@/data/inventory";
 import { websiteMenuCategories, websiteMenuProducts } from "@/data/admin-menu";
 import { getMenuItemImage } from "@/data/menu-item-images";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { supabase } from "@/lib/supabase";
 import type { IngredientDefinition, Product } from "@/types";
 
@@ -102,6 +104,9 @@ function productFromRow(row: MenuRow): Product {
 }
 
 export function MenuProvider({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { isAdmin } = useAdminAuth();
+  const canLoadInventory = pathname.startsWith("/admin") && isAdmin;
   const [products, setProducts] = useState<Product[]>(starterProducts);
   const [ingredients, setIngredients] = useState<InventoryIngredient[]>([]);
   const [categoryRows, setCategoryRows] = useState<CategoryRow[]>([]);
@@ -134,10 +139,12 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { data: ingredientData, error: ingredientError } = await supabase
-      .from("ingredients")
-      .select("id, name_ar, name_en, unit, available_quantity, low_stock_threshold")
-      .order("name_en");
+    const ingredientResult = canLoadInventory
+      ? await supabase
+          .from("ingredients")
+          .select("id, name_ar, name_en, unit, available_quantity, low_stock_threshold")
+          .order("name_en")
+      : null;
 
     setCategoryRows((categoryData ?? []) as CategoryRow[]);
     setProducts(((menuData ?? []) as MenuRow[]).map(productFromRow));
@@ -151,9 +158,9 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    if (!ingredientError && ingredientData?.length) {
+    if (!ingredientResult?.error && ingredientResult?.data?.length) {
       setIngredients(
-        ((ingredientData ?? []) as IngredientRow[]).map((ingredient) => {
+        (ingredientResult.data as IngredientRow[]).map((ingredient) => {
           const qty = Number(ingredient.available_quantity ?? 0);
           return {
             id: ingredient.id,
@@ -176,7 +183,7 @@ export function MenuProvider({ children }: { children: ReactNode }) {
       );
     }
     setLoading(false);
-  }, []);
+  }, [canLoadInventory]);
 
   useEffect(() => {
     void refresh();

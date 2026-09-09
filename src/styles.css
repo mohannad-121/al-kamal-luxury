@@ -577,6 +577,17 @@ html[dir="rtl"] .eyebrow {
   }
 }
 
+/* Local UI reviews should never wait on entrance animations. This only applies
+   to Vite development and leaves the published site's motion unchanged. */
+html[data-local-preview] .hero-enter,
+html[data-local-preview] .reveal {
+  animation: none;
+  filter: none;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 /* Hide the Lovable platform badge (injected remotely when site is connected to Lovable) */
 #lovable-badge,
 [id^="lovable"],

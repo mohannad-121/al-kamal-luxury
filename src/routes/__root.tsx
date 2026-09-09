@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -128,7 +129,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-local-preview={import.meta.env.DEV ? "" : undefined}>
       <head>
         <HeadContent />
       </head>
@@ -142,6 +143,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const content = (
     <>
       <Outlet />
@@ -154,7 +156,7 @@ function RootComponent() {
       <CartProvider>
         <MenuProvider>
           <ProductSheetProvider>
-            <DailySalesProvider>{content}</DailySalesProvider>
+            {pathname.startsWith("/admin") ? <DailySalesProvider>{content}</DailySalesProvider> : content}
           </ProductSheetProvider>
         </MenuProvider>
       </CartProvider>
