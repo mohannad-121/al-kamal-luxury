@@ -1,12 +1,12 @@
--- Migration: Fix Daily Sales Recording Architecture (Zero Inventory Coupling, Secure RPC)
--- File: supabase/migrations/20260909_fix_daily_sales_rpc.sql
+-- Security Hardening Migration for Daily Sales RPC
+-- File: supabase/migrations/20260909_harden_daily_sales_rpc_security.sql
 
 -- 1. REVOKE PUBLIC AND ANON EXECUTE PERMISSIONS FIRST
 REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.record_sale(uuid, uuid, integer) FROM PUBLIC, anon;
 
--- 2. Helper function: check if caller is an admin
+-- 2. HARDENED is_admin() FUNCTION
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
@@ -14,20 +14,23 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  -- Unconditionally return false for unauthenticated callers
   IF auth.uid() IS NULL THEN
     RETURN false;
   END IF;
 
   RETURN EXISTS (
-    SELECT 1 FROM public.admin_users
+    SELECT 1
+    FROM public.admin_users
     WHERE id = auth.uid()
   );
 END;
 $$;
 
+-- Grant EXECUTE to authenticated users only
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 
--- 3. Secure RPC for recording / undoing daily sales
+-- 3. HARDENED record_sale_manual_inventory() FUNCTION
 CREATE OR REPLACE FUNCTION public.record_sale_manual_inventory(
   p_menu_item_id uuid,
   p_delta integer DEFAULT 1
@@ -50,6 +53,7 @@ DECLARE
   v_price_delta numeric(10,3);
 BEGIN
   -- A. UNCONDITIONAL ADMIN AUTHORIZATION CHECK
+  -- Rejects null auth.uid(), anon callers, and non-admin authenticated users
   IF auth.uid() IS NULL OR NOT public.is_admin() THEN
     RAISE EXCEPTION 'Access denied: Admin privileges required to record sales.';
   END IF;
@@ -59,7 +63,7 @@ BEGIN
     RAISE EXCEPTION 'Invalid delta parameter. Delta must be either 1 or -1.';
   END IF;
 
-  -- C. Validate Menu Item
+  -- C. VALIDATE MENU ITEM
   SELECT id, name_ar, name_en, category_id, price, discount, is_archived
   INTO v_item
   FROM public.menu_items
@@ -73,11 +77,11 @@ BEGIN
     RAISE EXCEPTION 'Cannot record sale for archived item: %', v_item.name_en;
   END IF;
 
-  -- Calculate effective unit price
+  -- Calculate effective unit price from DB values
   v_unit_price := GREATEST(0, COALESCE(v_item.price, 0) - COALESCE(v_item.discount, 0));
   v_category_id := v_item.category_id;
 
-  -- D. Get or Create Today's Active Session (Asia/Amman timezone)
+  -- D. GET OR CREATE TODAY'S SESSION (CONCURRENCY SAFE WITH ROW LOCK)
   v_active_date := (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Amman')::date;
 
   SELECT id INTO v_session_id
@@ -113,7 +117,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- E. Query existing quantity sold in daily_item_sales with row lock
+  -- E. QUERY EXISTING ITEM SALE WITH ROW LOCK (FOR UPDATE)
   SELECT quantity_sold, revenue
   INTO v_current_qty, v_current_rev
   FROM public.daily_item_sales
@@ -143,7 +147,7 @@ BEGIN
 
   v_next_rev := GREATEST(0, v_current_rev + v_price_delta);
 
-  -- F. Mutate daily_item_sales atomically
+  -- F. ATOMIC ITEM SALES MUTATION
   IF v_next_qty > 0 THEN
     INSERT INTO public.daily_item_sales (
       session_id,
@@ -177,7 +181,7 @@ BEGIN
     WHERE session_id = v_session_id AND menu_item_id = p_menu_item_id;
   END IF;
 
-  -- G. Mutate daily_sessions totals atomically
+  -- G. ATOMIC SESSION TOTALS MUTATION
   UPDATE public.daily_sessions
   SET
     total_revenue = GREATEST(0, total_revenue + v_price_delta),
@@ -185,7 +189,7 @@ BEGIN
     total_sales_entries = GREATEST(0, total_sales_entries + p_delta)
   WHERE id = v_session_id;
 
-  -- H. Return JSON result
+  -- H. RETURN STRUCTURED RESULT
   RETURN jsonb_build_object(
     'success', true,
     'session_id', v_session_id,
@@ -196,7 +200,7 @@ BEGIN
 END;
 $$;
 
--- Alias: Create record_sale function overload
+-- 4. HARDENED record_sale ALIAS OVERLOAD
 CREATE OR REPLACE FUNCTION public.record_sale(
   p_session_id uuid DEFAULT NULL,
   p_menu_item_id uuid DEFAULT NULL,
@@ -212,7 +216,7 @@ BEGIN
 END;
 $$;
 
--- Explicit privilege revocations & grants
+-- 5. EXPLICIT PRIVILEGE REVOCATIONS & GRANTS
 REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM anon;
 
