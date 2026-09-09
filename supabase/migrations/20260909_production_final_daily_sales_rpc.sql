@@ -1,12 +1,7 @@
 -- Production Final Daily Sales RPC Migration (Zero Inventory Coupling, Secure Admin RPC)
 -- File: supabase/migrations/20260909_production_final_daily_sales_rpc.sql
 
--- 1. REVOKE PUBLIC AND ANON EXECUTE PRIVILEGES FIRST
-REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.record_sale(uuid, uuid, integer) FROM PUBLIC, anon, authenticated;
-
--- 2. CREATE OR REPLACE HARDENED is_admin() FUNCTION
+-- 1. CREATE OR REPLACE HARDENED is_admin() FUNCTION FIRST
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
@@ -27,10 +22,7 @@ BEGIN
 END;
 $$;
 
--- Grant EXECUTE to authenticated role only
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
-
--- 3. CREATE OR REPLACE SECURE record_sale_manual_inventory() FUNCTION
+-- 2. CREATE OR REPLACE SECURE record_sale_manual_inventory() FUNCTION
 CREATE OR REPLACE FUNCTION public.record_sale_manual_inventory(
   p_menu_item_id uuid,
   p_delta integer DEFAULT 1
@@ -199,7 +191,7 @@ BEGIN
 END;
 $$;
 
--- 4. CREATE OR REPLACE RECORD_SALE ALIAS OVERLOAD
+-- 3. CREATE OR REPLACE RECORD_SALE ALIAS OVERLOAD
 CREATE OR REPLACE FUNCTION public.record_sale(
   p_session_id uuid DEFAULT NULL,
   p_menu_item_id uuid DEFAULT NULL,
@@ -215,15 +207,19 @@ BEGIN
 END;
 $$;
 
--- 5. EXPLICIT PRIVILEGE REVOCATIONS & GRANTS
+-- 4. EXPLICIT PRIVILEGE REVOCATIONS & GRANTS (RUN AFTER CREATING FUNCTIONS)
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_admin() FROM anon;
+
 REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.record_sale_manual_inventory(uuid, integer) FROM anon;
 
 REVOKE ALL ON FUNCTION public.record_sale(uuid, uuid, integer) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.record_sale(uuid, uuid, integer) FROM anon;
 
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_sale_manual_inventory(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_sale(uuid, uuid, integer) TO authenticated;
 
--- 6. RELOAD POSTGREST SCHEMA CACHE
+-- 5. RELOAD POSTGREST SCHEMA CACHE
 NOTIFY pgrst, 'reload schema';
