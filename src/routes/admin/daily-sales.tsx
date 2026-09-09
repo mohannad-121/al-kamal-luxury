@@ -237,14 +237,9 @@ function DailySales() {
                         <Price value={quantity * unitPrice} />
                       </span>
                     </div>
-                    {!product.available || !hasRecipe ? (
+                    {!product.available ? (
                       <p className="mt-3 text-xs text-amber-200">
-                        {product.available
-                          ? L(
-                              "سيتم تسجيل البيع، لكن المخزون لن يتغير حتى تضيف وصفة لهذا الصنف.",
-                              "The sale will be recorded, but inventory will not change until you add a recipe.",
-                            )
-                          : L("هذا الصنف غير متوفر حالياً.", "This item is currently unavailable.")}
+                        {L("هذا الصنف غير متوفر حالياً.", "This item is currently unavailable.")}
                       </p>
                     ) : null}
                     <div className="mt-4 grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2">

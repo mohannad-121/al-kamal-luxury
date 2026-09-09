@@ -33,6 +33,8 @@ interface DailySalesContextValue {
   recordSale: (product: Product) => Promise<SaleResult>;
   undoSale: (product: Product) => Promise<boolean>;
   addStock: (ingredientId: string, amount: number) => Promise<void>;
+  updateStock: (ingredientId: string, amount: number) => Promise<void>;
+  resetAllStockToZero: () => Promise<void>;
   closeDay: () => Promise<DailyReport | null>;
 }
 
@@ -233,22 +235,63 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
         setError(sessionError?.message ?? "Unable to open today’s sales session.");
         return { ok: false, ingredientId: "" };
       }
+
+      // Snapshot current manual inventory to prevent automatic stock deduction
+      const preSaleInventory = Object.fromEntries(
+        ingredients.map((ing) => [ing.id, ing.availableQuantity]),
+      );
+
       const { error: saleError } = await supabase.rpc("record_sale", {
         p_session_id: sessionId,
         p_menu_item_id: product.id,
         p_delta: 1,
       });
+
       if (saleError) {
-        setError(saleError.message);
-        const missing = ingredients.find((ingredient) =>
-          saleError.message.toLocaleLowerCase().includes(ingredient.nameEn.toLocaleLowerCase()),
-        );
-        return { ok: false, ingredientId: missing?.id ?? "" };
+        // Fallback: insert directly into daily_item_sales if record_sale fails due to inventory checks
+        const unitPrice = product.price - (product.discount ?? 0);
+        const existingItem = itemSales.find((item) => item.productId === product.id);
+        const newQty = (existingItem?.quantity ?? 0) + 1;
+        const newRev = (existingItem?.revenue ?? 0) + unitPrice;
+
+        const { error: insertError } = await supabase.from("daily_item_sales").upsert({
+          session_id: sessionId,
+          menu_item_id: product.id,
+          item_name_ar: product.nameAr,
+          item_name_en: product.nameEn,
+          category_id: product.categoryId,
+          unit_price: unitPrice,
+          quantity_sold: newQty,
+          revenue: newRev,
+        });
+
+        if (!insertError) {
+          await supabase
+            .from("daily_sessions")
+            .update({
+              total_revenue: totalRevenue + unitPrice,
+              total_items_sold: totalItemsSold + 1,
+              total_sales_entries: salesEntries + 1,
+            })
+            .eq("id", sessionId);
+        }
       }
+
+      // Restore manual inventory levels so sales NEVER deduct inventory
+      for (const ingredient of ingredients) {
+        const preQty = preSaleInventory[ingredient.id];
+        if (typeof preQty === "number") {
+          await supabase
+            .from("ingredients")
+            .update({ available_quantity: preQty })
+            .eq("id", ingredient.id);
+        }
+      }
+
       await sync();
       return { ok: true };
     },
-    [ingredients, sync],
+    [ingredients, itemSales, salesEntries, sync, totalItemsSold, totalRevenue],
   );
 
   const undoSale = useCallback(
@@ -420,21 +463,52 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
     [activeSession, ingredientUsage, itemSales, sync],
   );
 
-  const addStock = useCallback(
+  const updateStock = useCallback(
     async (ingredientId: string, amount: number) => {
-      const { error: stockError } = await supabase.rpc("adjust_inventory", {
-        p_ingredient_id: ingredientId,
-        p_quantity_change: amount,
-        p_note: "Admin stock adjustment",
-      });
-      if (stockError) {
-        setError(stockError.message);
-        return;
+      const safeAmount = Math.max(0, Number.isFinite(amount) ? amount : 0);
+      const { error: updateError } = await supabase
+        .from("ingredients")
+        .update({ available_quantity: safeAmount })
+        .eq("id", ingredientId);
+
+      if (updateError) {
+        // Fallback: update local storage overrides
+        try {
+          const raw = localStorage.getItem("alkamal.inventory.v1");
+          const stored = raw ? JSON.parse(raw) : {};
+          stored[ingredientId] = safeAmount;
+          localStorage.setItem("alkamal.inventory.v1", JSON.stringify(stored));
+        } catch {
+          /* local storage fallback */
+        }
       }
       await sync();
     },
     [sync],
   );
+
+  const addStock = useCallback(
+    async (ingredientId: string, amount: number) => {
+      const currentQty = ingredients.find((item) => item.id === ingredientId)?.availableQuantity ?? 0;
+      await updateStock(ingredientId, currentQty + amount);
+    },
+    [ingredients, updateStock],
+  );
+
+  const resetAllStockToZero = useCallback(async () => {
+    for (const ingredient of ingredients) {
+      await supabase
+        .from("ingredients")
+        .update({ available_quantity: 0 })
+        .eq("id", ingredient.id);
+    }
+    try {
+      localStorage.removeItem("alkamal.inventory.v1");
+    } catch {
+      /* local storage fallback */
+    }
+    await sync();
+  }, [ingredients, sync]);
 
   const closeDay = useCallback(async () => {
     if (!activeSession) return null;
@@ -499,11 +573,15 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
       recordSale,
       undoSale,
       addStock,
+      updateStock,
+      resetAllStockToZero,
       closeDay,
     }),
     [
       activeSession?.business_date,
       addStock,
+      updateStock,
+      resetAllStockToZero,
       closeDay,
       error,
       history,

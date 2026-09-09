@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ingredientDefinitions } from "@/data/inventory";
 import { websiteMenuCategories, websiteMenuProducts } from "@/data/admin-menu";
 import { getMenuItemImage } from "@/data/menu-item-images";
 import { supabase } from "@/lib/supabase";
@@ -138,20 +139,44 @@ export function MenuProvider({ children }: { children: ReactNode }) {
 
     setCategoryRows((categoryData ?? []) as CategoryRow[]);
     setProducts(((menuData ?? []) as MenuRow[]).map(productFromRow));
-    if (!ingredientError) {
+
+    const localOverrides = (() => {
+      try {
+        const raw = localStorage.getItem("alkamal.inventory.v1");
+        return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      } catch {
+        return {};
+      }
+    })();
+
+    if (!ingredientError && ingredientData?.length) {
       setIngredients(
-        ((ingredientData ?? []) as IngredientRow[]).map((ingredient) => ({
-          id: ingredient.id,
-          nameAr: ingredient.name_ar,
-          nameEn: ingredient.name_en,
-          unit: ingredient.unit,
-          initialQuantity: Number(ingredient.available_quantity),
-          availableQuantity: Number(ingredient.available_quantity),
-          lowStockThreshold: Number(ingredient.low_stock_threshold),
-        })),
+        ((ingredientData ?? []) as IngredientRow[]).map((ingredient) => {
+          const override = localOverrides[ingredient.id];
+          const qty = typeof override === "number" ? override : Number(ingredient.available_quantity);
+          return {
+            id: ingredient.id,
+            nameAr: ingredient.name_ar,
+            nameEn: ingredient.name_en,
+            unit: ingredient.unit,
+            initialQuantity: qty,
+            availableQuantity: qty,
+            lowStockThreshold: Number(ingredient.low_stock_threshold),
+          };
+        }),
       );
     } else {
-      setIngredients([]);
+      setIngredients(
+        ingredientDefinitions.map((def) => {
+          const override = localOverrides[def.id];
+          const qty = typeof override === "number" ? override : 0;
+          return {
+            ...def,
+            initialQuantity: qty,
+            availableQuantity: qty,
+          };
+        }),
+      );
     }
     setLoading(false);
   }, []);

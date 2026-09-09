@@ -6,7 +6,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "فلافل",
     nameEn: "Falafel",
     unit: "g",
-    initialQuantity: 12000,
+    initialQuantity: 0,
     lowStockThreshold: 1800,
   },
   {
@@ -14,7 +14,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "حمص",
     nameEn: "Hummus",
     unit: "g",
-    initialQuantity: 10000,
+    initialQuantity: 0,
     lowStockThreshold: 1500,
   },
   {
@@ -22,7 +22,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "فول",
     nameEn: "Foul",
     unit: "g",
-    initialQuantity: 10000,
+    initialQuantity: 0,
     lowStockThreshold: 1500,
   },
   {
@@ -30,7 +30,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "حمص حب",
     nameEn: "Chickpeas",
     unit: "g",
-    initialQuantity: 9000,
+    initialQuantity: 0,
     lowStockThreshold: 1200,
   },
   {
@@ -38,7 +38,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "طحينة",
     nameEn: "Tahini",
     unit: "g",
-    initialQuantity: 5000,
+    initialQuantity: 0,
     lowStockThreshold: 700,
   },
   {
@@ -46,8 +46,16 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "خبز عادي",
     nameEn: "Normal Bread",
     unit: "piece",
-    initialQuantity: 180,
+    initialQuantity: 0,
     lowStockThreshold: 25,
+  },
+  {
+    id: "kaak-bread",
+    nameAr: "كعك",
+    nameEn: "Ka'ak Bread",
+    unit: "piece",
+    initialQuantity: 0,
+    lowStockThreshold: 10,
   },
   {
     id: "tortilla-bread",
@@ -58,9 +66,9 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     lowStockThreshold: 10,
   },
   {
-    id: "kaak-bread",
-    nameAr: "كعك",
-    nameEn: "Ka'ak Bread",
+    id: "shrak-bread",
+    nameAr: "خبز شراك بلدي",
+    nameEn: "Shrak Bread",
     unit: "piece",
     initialQuantity: 0,
     lowStockThreshold: 10,
@@ -78,7 +86,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "خضار",
     nameEn: "Vegetables",
     unit: "g",
-    initialQuantity: 8000,
+    initialQuantity: 0,
     lowStockThreshold: 1200,
   },
   {
@@ -86,7 +94,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "زيت",
     nameEn: "Oil",
     unit: "ml",
-    initialQuantity: 6000,
+    initialQuantity: 0,
     lowStockThreshold: 800,
   },
   {
@@ -94,7 +102,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "بيض",
     nameEn: "Eggs",
     unit: "piece",
-    initialQuantity: 180,
+    initialQuantity: 0,
     lowStockThreshold: 24,
   },
   {
@@ -102,7 +110,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "سجق",
     nameEn: "Sujuk",
     unit: "g",
-    initialQuantity: 6000,
+    initialQuantity: 0,
     lowStockThreshold: 900,
   },
   {
@@ -110,7 +118,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "بندورة",
     nameEn: "Tomatoes",
     unit: "g",
-    initialQuantity: 10000,
+    initialQuantity: 0,
     lowStockThreshold: 1500,
   },
   {
@@ -118,7 +126,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "بطاطا",
     nameEn: "Potatoes",
     unit: "g",
-    initialQuantity: 10000,
+    initialQuantity: 0,
     lowStockThreshold: 1500,
   },
   {
@@ -126,7 +134,7 @@ export const ingredientDefinitions: IngredientDefinition[] = [
     nameAr: "لحمة",
     nameEn: "Meat",
     unit: "g",
-    initialQuantity: 5000,
+    initialQuantity: 0,
     lowStockThreshold: 700,
   },
 ];
