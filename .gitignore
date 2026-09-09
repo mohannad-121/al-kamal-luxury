@@ -30,3 +30,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vercel build output (generated, not source)
+.vercel/output/
+
+# Supabase temp files
+supabase/.temp/
+
+# Raw photos / assets that don't belong in source control
+menuitemsphotos/
+photos/
+
+# One-off screenshots and regression images
+*.png
+*.jpg
+*.jpeg
+!public/**
+!src/**
+
+# Temp/diagnostic scripts
+diagnose-*.mjs
+fix-*.mjs
+audit-*.mjs
+test-*.mjs
+full-*.mjs
+make-*.mjs
+inspect-*.mjs
