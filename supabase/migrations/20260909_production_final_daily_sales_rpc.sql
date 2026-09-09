@@ -1,7 +1,15 @@
 -- Production Final Daily Sales RPC Migration (Zero Inventory Coupling, Secure Admin RPC)
 -- File: supabase/migrations/20260909_production_final_daily_sales_rpc.sql
 
--- 1. CREATE OR REPLACE HARDENED is_admin() FUNCTION FIRST
+-- 1. DROP EXISTING RPC FUNCTIONS FIRST TO ALLOW CHANGING RETURN TYPES CLEANLY
+-- (Do NOT drop is_admin() because RLS policies depend on it; CREATE OR REPLACE handles it directly)
+DROP FUNCTION IF EXISTS public.record_sale(uuid, uuid, integer);
+DROP FUNCTION IF EXISTS public.record_sale(uuid, integer);
+DROP FUNCTION IF EXISTS public.record_sale();
+DROP FUNCTION IF EXISTS public.record_sale_manual_inventory(uuid, integer);
+DROP FUNCTION IF EXISTS public.record_sale_manual_inventory();
+
+-- 2. CREATE HARDENED is_admin() FUNCTION
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
 LANGUAGE plpgsql
@@ -22,7 +30,7 @@ BEGIN
 END;
 $$;
 
--- 2. CREATE OR REPLACE SECURE record_sale_manual_inventory() FUNCTION
+-- 3. CREATE SECURE record_sale_manual_inventory() FUNCTION
 CREATE OR REPLACE FUNCTION public.record_sale_manual_inventory(
   p_menu_item_id uuid,
   p_delta integer DEFAULT 1
@@ -191,7 +199,7 @@ BEGIN
 END;
 $$;
 
--- 3. CREATE OR REPLACE RECORD_SALE ALIAS OVERLOAD
+-- 4. CREATE RECORD_SALE ALIAS OVERLOAD
 CREATE OR REPLACE FUNCTION public.record_sale(
   p_session_id uuid DEFAULT NULL,
   p_menu_item_id uuid DEFAULT NULL,
@@ -207,7 +215,7 @@ BEGIN
 END;
 $$;
 
--- 4. EXPLICIT PRIVILEGE REVOCATIONS & GRANTS (RUN AFTER CREATING FUNCTIONS)
+-- 5. EXPLICIT PRIVILEGE REVOCATIONS & GRANTS
 REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_admin() FROM anon;
 
@@ -221,5 +229,5 @@ GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_sale_manual_inventory(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_sale(uuid, uuid, integer) TO authenticated;
 
--- 5. RELOAD POSTGREST SCHEMA CACHE
+-- 6. RELOAD POSTGREST SCHEMA CACHE
 NOTIFY pgrst, 'reload schema';
