@@ -140,20 +140,19 @@ export function MenuProvider({ children }: { children: ReactNode }) {
     setCategoryRows((categoryData ?? []) as CategoryRow[]);
     setProducts(((menuData ?? []) as MenuRow[]).map(productFromRow));
 
-    const localOverrides = (() => {
+    // Ensure stale inventory localStorage overrides are purged
+    if (typeof window !== "undefined") {
       try {
-        const raw = localStorage.getItem("alkamal.inventory.v1");
-        return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+        localStorage.removeItem("alkamal.inventory.v1");
       } catch {
-        return {};
+        /* ignore */
       }
-    })();
+    }
 
     if (!ingredientError && ingredientData?.length) {
       setIngredients(
         ((ingredientData ?? []) as IngredientRow[]).map((ingredient) => {
-          const override = localOverrides[ingredient.id];
-          const qty = typeof override === "number" ? override : Number(ingredient.available_quantity);
+          const qty = Number(ingredient.available_quantity ?? 0);
           return {
             id: ingredient.id,
             nameAr: ingredient.name_ar,
@@ -161,21 +160,17 @@ export function MenuProvider({ children }: { children: ReactNode }) {
             unit: ingredient.unit,
             initialQuantity: qty,
             availableQuantity: qty,
-            lowStockThreshold: Number(ingredient.low_stock_threshold),
+            lowStockThreshold: Number(ingredient.low_stock_threshold ?? 0),
           };
         }),
       );
     } else {
       setIngredients(
-        ingredientDefinitions.map((def) => {
-          const override = localOverrides[def.id];
-          const qty = typeof override === "number" ? override : 0;
-          return {
-            ...def,
-            initialQuantity: qty,
-            availableQuantity: qty,
-          };
-        }),
+        ingredientDefinitions.map((def) => ({
+          ...def,
+          initialQuantity: 0,
+          availableQuantity: 0,
+        })),
       );
     }
     setLoading(false);

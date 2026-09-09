@@ -472,15 +472,7 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
         .eq("id", ingredientId);
 
       if (updateError) {
-        // Fallback: update local storage overrides
-        try {
-          const raw = localStorage.getItem("alkamal.inventory.v1");
-          const stored = raw ? JSON.parse(raw) : {};
-          stored[ingredientId] = safeAmount;
-          localStorage.setItem("alkamal.inventory.v1", JSON.stringify(stored));
-        } catch {
-          /* local storage fallback */
-        }
+        setError(updateError.message);
       }
       await sync();
     },
@@ -497,15 +489,11 @@ export function DailySalesProvider({ children }: { children: ReactNode }) {
 
   const resetAllStockToZero = useCallback(async () => {
     for (const ingredient of ingredients) {
-      await supabase
+      const { error: resetError } = await supabase
         .from("ingredients")
         .update({ available_quantity: 0 })
         .eq("id", ingredient.id);
-    }
-    try {
-      localStorage.removeItem("alkamal.inventory.v1");
-    } catch {
-      /* local storage fallback */
+      if (resetError) setError(resetError.message);
     }
     await sync();
   }, [ingredients, sync]);
