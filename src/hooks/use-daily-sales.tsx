@@ -67,6 +67,8 @@ type HistoryRow = {
   daily_ingredient_usage: UsageRow[] | null;
 };
 
+const DailySalesContext = createContext<DailySalesContextValue | null>(null);
+
 function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Amman" }).format(new Date());
 }
