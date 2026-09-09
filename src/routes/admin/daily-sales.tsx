@@ -92,16 +92,9 @@ function DailySales() {
     setPendingSaleId(product.id);
     try {
       const result = await recordSale(product);
-      if (!result.ok) {
-        setStockMessage(
-          L(
-            "تعذر تسجيل البيع. يرجى المحاولة مرة أخرى.",
-            "Sale not recorded. Please try again.",
-          ),
-        );
-        return;
+      if (result.ok) {
+        setStockMessage("");
       }
-      setStockMessage("");
     } finally {
       setPendingSaleId(null);
     }
