@@ -576,3 +576,17 @@ html[dir="rtl"] .eyebrow {
     transform: none !important;
   }
 }
+
+/* Hide the Lovable platform badge (injected remotely when site is connected to Lovable) */
+#lovable-badge,
+[id^="lovable"],
+[class*="lovable-badge"],
+[data-lovable],
+iframe[src*="lovable"],
+div[style*="z-index: 99999"]:has(img[src*="lovable"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
